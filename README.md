@@ -1,4 +1,4 @@
-# Bunnypad
+# BunnyPad
 BunnyPad: The Newest and Cutest Way to take notes!
 
 
@@ -17,3 +17,7 @@ GarryStraitYT - Main developer of the project
 OpenAI's ChatGPT - Helped with bugchecking the program
 
 # Please note that these are older versions! Please check out https://garrystraityt.itch.io/bunnypad for the latest versions.
+
+
+### Open Source code is available in the open-source branch
+![bunnypad](https://github.com/GSYT-Productions/bunnypad/assets/92406354/ed685452-39aa-4537-b63b-e16131f3d1d6)
