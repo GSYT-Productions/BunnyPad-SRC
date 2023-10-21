@@ -1,4 +1,4 @@
-# Bunnypad
+# BunnyPad
 BunnyPad: The Newest and Cutest Way to take notes!
 
 
@@ -6,13 +6,19 @@ These people helped get the program to its current state:
 
 PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her
 
-EpikCartfren - One of the earliest Carrot Patch (Beta Test) members, and also is helping port it to Mac OS
+EpikCartfren - One of the earliest CarrotPatch (Beta Test) members
 
-RedPCat - Helping us port it to Debian
+Come On Linux - Helping us port it to Linux
 
-FireCube - Helping us get it to the Microsoft Store
+Vichingo455 - Manages Mirrors; helped with code signing
 
 GarryStraitYT - Main developer of the project
+
+BunnyFndr - Main Co-developer
+
+Windows World (Mini Enderman) - confirmed 100th download
+
+ZeRoTeCh00 - Promoted BunnyPad during stream
 
 OpenAI's ChatGPT - Helped with bugchecking the program
 
