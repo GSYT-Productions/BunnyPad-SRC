@@ -1,0 +1,4 @@
+PyQt5
+auto-py-to-exe
+fpdf
+distro
