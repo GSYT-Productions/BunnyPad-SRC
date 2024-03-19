@@ -34,8 +34,8 @@ jobs:
 
     - name: Build binary
       run: |
-        pyinstaller --noconfirm --onefile --console --icon "bunnypad.png"  "mainv10.py"
-        ren mainv10.exe BunnyPad-LS-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2%.exe
+        pyinstaller --noconfirm --onefile --console --icon "bunnypad.png"  "latest.py"
+        ren latest.exe BunnyPadv10-LS-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2%.exe
 
     - name: Create Release
       id: create_release
