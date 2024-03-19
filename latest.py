@@ -4,7 +4,7 @@ from fpdf import FPDF
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
 from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
 from PyQt6.QtPrintSupport import QPrintDialog
-from PySide6.QtGui import QTextCharFormat
+# from PySide6.QtGui import QTextCharFormat
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
