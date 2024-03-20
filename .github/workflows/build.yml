@@ -20,13 +20,6 @@ jobs:
    #   run: |
    #     choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
     
-
-    - name: Get current date
-      id: date
-      run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-          
-
-
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -38,7 +31,11 @@ jobs:
       run: |
         pyinstaller --noconfirm --onefile --console --icon "bunnypad.png"  "latest.py"
         ren ./dist/latest.exe BunnyPadv10-LLS.exe
-
+    - name: Timestamp
+      run: |
+          $timeStamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          $releaseName = "Release-$env:GITHUB_RUN_NUMBER-$timeStamp"
+          echo "::set-output name=release_name::$releaseName"
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -46,7 +43,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: github-actions
-        release_name: BunnyPad - Latest Snapshot ${{ steps.date.outputs.date }} - win_amd64
+        release_name: BunnyPad - Latest Snapshot ${{ steps.timestamp.outputs.release_name }} - win_amd64
         draft: false
         prerelease: true
 
