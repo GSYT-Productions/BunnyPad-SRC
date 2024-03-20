@@ -31,11 +31,11 @@ jobs:
       run: |
         pyinstaller --noconfirm --onefile --console --icon "bunnypad.png"  "latest.py"
         ren ./dist/latest.exe BunnyPadv10-LLS.exe
-    - name: Timestamp
+    - name: Generate Timestamp
+      id: generate_timestamp
       run: |
           $timeStamp = Get-Date -Format "yyyyMMdd-HHmmss"
-          $releaseName = "Release-$env:GITHUB_RUN_NUMBER-$timeStamp"
-          echo "::set-output name=release_name::$releaseName"
+          echo "::set-output name=timestamp::$timeStamp"
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -43,7 +43,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: github-actions
-        release_name: BunnyPad - Latest Snapshot ${{ steps.timestamp.outputs.release_name }} - win_amd64
+        release_name: BunnyPad - Latest Snapshot - ${{ steps.generate_timestamp.outputs.timestamp }} - win_amd64
         draft: false
         prerelease: true
 
