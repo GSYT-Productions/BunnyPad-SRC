@@ -1,10 +1,10 @@
-import sys, os, time, platform, distro, unicodedata, textwrap, datetime
+import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re
 from PyQt6.QtCore import *
 from fpdf import FPDF
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
 from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
 from PyQt6.QtPrintSupport import QPrintDialog
-# from PySide6.QtGui import QTextCharFormat
+from PySide6.QtGui import QTextCharFormat
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -148,8 +148,8 @@ class AboutDialog(QDialog):
         layout.addWidget(logo)
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
         layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC"))
-        layout.addWidget(QLabel("Certified clean from ByLiam"))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.21996 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Hopping Past Opinions"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.21996.5 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -288,6 +288,9 @@ class Notepad(QMainWindow):
         self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
         self.setGeometry(100, 100, 800, 600)# Apply the style sheet
         self.file_path = None
+        self.unsaved_changes_flag = False
+        self.textedit = QTextEdit(self)
+        self.textedit.textChanged.connect(self.handle_text_changed)
         self.setStyleSheet("""
         /* Set the background color of icons */
         QLabel[icon="true"] {
@@ -341,7 +344,6 @@ class Notepad(QMainWindow):
         """)
         # I am a friggin idiot!
         # Set up text edit widget
-        self.textedit = QTextEdit(self)
         # self.textedit = self.textedit.setAcceptRichText(True)
         self.setCentralWidget(self.textedit)
         # Create menu bar
@@ -639,48 +641,57 @@ class Notepad(QMainWindow):
                 )
     def save_file(self):
         """Save the file."""
-        # If the file has not been saved before, show Save As dialog
         if not self.file_path:
             self.save_file_as()
             return
-        # Save file with existing file path
         with open(self.file_path, "w") as f:
             f.write(self.textedit.toPlainText())
-        # Update window title to reflect saved changes
         self.setWindowTitle(f"{os.path.basename(self.file_path)} - BunnyPad")
-
+        self.unsaved_changes_flag = False  # Reset flag after saving
     def closeEvent(self, event):
-        # Show a message box before closing
-        reply = QMessageBox.question(self,
-                                     "Confirm Exit",
-                                     "Are you sure you want to quit?",
-                                     QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
-        if reply == QMessageBox.Ok:
-            if self.check_saved_changes():
-                event.accept()
-        else:
-            event.ignore()
+       # Show a message box before closing
+       reply = QMessageBox.question(self,
+                                    "Confirm Exit",
+                                    "Are you sure you want to quit?",
+                                    QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+                                    QMessageBox.StandardButton.Cancel)
+       if reply == QMessageBox.StandardButton.Ok:
+           if self.unsaved_changes_flag == False:
+               event.accept
+           else:
+               self.warn_unsaved_changes()
+               event.accept()
+       else:
+          event.ignore()
 
-          # "Are you sure you want to quit?"
-    def save_file_as(self):
-        # options = QFileDialog.getSaveFileName()
-        options = QFileDialog.Option.DontUseNativeDialog
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save As", "", "Text Files (*.txt);;Log Files (*.log);; Info files (*.nfo);; Batch files (*.bat);; Windows Command Script files (*.cmd);; VirtualBasicScript files (*.vbs);; JSON files (*.json);; All Files (*.*)", options=options)
-        if file_path:
-            self.file_path = file_path
-            self.save_file()    
+    def handle_text_changed(self):
+        self.unsaved_changes_flag = True
+
     def check_saved_changes(self):
-        """Check if there are unsaved changes and prompt user to save them."""
-        if self.textedit.document().isModified():
-            ret = QMessageBox.warning(self, "BunnyPad", "The document has been modified.\nDo you want to save " "your changes?", QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+        return not self.unsaved_changes_flag
 
-            if ret == QMessageBox.Save:
-                return self.save_file()
-                return True
+    def save_file_as(self):
+        # options = QFileDialog.Option.DontUseNativeDialog
+        file_path, selected_filter = QFileDialog.getSaveFileName(self, "Save As", "", "Text Files (*.txt);;Log Files (*.log);; Info files (*.nfo);; Batch files (*.bat);; Windows Command Script files (*.cmd);; VirtualBasicScript files (*.vbs);; JSON files (*.json);; All Files (*.*)") #, options=options)
+        if file_path:
+            # Extract file extension from the selected filter using regular expressions
+            file_extension_match = re.search(r'\(\*\.(\w+)\)', selected_filter)
+            if file_extension_match:
+                file_extension = '.' + file_extension_match.group(1)
+                # Append the file extension to the file path if it's not already there
+                if not file_path.endswith(file_extension):
+                    file_path += file_extension
+            self.file_path = file_path
+            self.save_file()
 
-            if ret == QMessageBox.Cancel:
-                return False
-        return True
+    def warn_unsaved_changes(self):
+        ret = QMessageBox.warning(self, "BunnyPad", "The document has been modified.\nDo you want to save your changes?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+        if ret == QMessageBox.StandardButton.Save:
+            return self.save_file()
+        elif ret == QMessageBox.StandardButton.Cancel:
+            return False
+        else:
+            return True
     def file_print(self):
         dlg = QPrintDialog()
         if dlg.exec():
