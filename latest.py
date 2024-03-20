@@ -4,7 +4,6 @@ from fpdf import FPDF
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
 from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
 from PyQt6.QtPrintSupport import QPrintDialog
-from PySide6.QtGui import QTextCharFormat
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -149,7 +148,7 @@ class AboutDialog(QDialog):
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
         layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC"))
         layout.addWidget(QLabel("Hopping Past Opinions"))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.21996.5 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.21996.6 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -289,6 +288,8 @@ class Notepad(QMainWindow):
         self.setGeometry(100, 100, 800, 600)# Apply the style sheet
         self.file_path = None
         self.unsaved_changes_flag = False
+        self.open_file_ran = False
+        self.save_file_ran = False
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
         self.setStyleSheet("""
@@ -436,6 +437,12 @@ class Notepad(QMainWindow):
         delete_action.setShortcut("Del")
         delete_action.triggered.connect(lambda: self.textedit.textCursor().deleteChar())
         edit_menu.addAction(delete_action)
+        # Create Date/Time Action
+        datetime_action = QAction(QIcon("images/temp.png"), "Date and Time", self)
+        datetime_action.setStatusTip("Inserts the current date and time, including milliseconds.")
+        datetime_action.setShortcut("F5")
+        datetime_action.triggered.connect(self.dateTime)
+        edit_menu.addAction(datetime_action)
         # Add separator
         edit_menu.addSeparator()
         # Create Action for showing/hiding Character Map in Edit Menu
@@ -449,17 +456,6 @@ class Notepad(QMainWindow):
         # Create Find action
         find_action = QAction(QIcon("images/find.png"), "Find...", self)
         find_action.setShortcut("Ctrl+F")  # Ctrl+F
-        """
-        next_instance_shortcut = QAction(QIcon("images/find.png"), "Find Next Instance", self)
-        next_instance_shortcut.setShortcut("F3")
-        next_instance_shortcut.triggered.connect(self.find_next_instance)
-        next_instance_shortcut.setStatusTip("Find the next instance of a word")
-        find_action.setStatusTip("Find a Word")
-        find_action.triggered.connect(self.search_word)
-        edit_menu.addAction(find_action)
-        edit_menu.addAction(next_instance_shortcut)
-        edit_menu.addSeparator()
-        """
         find_action.setStatusTip("Currently in development...")
         find_action.setShortcut("Ctrl+F")
         find_action.triggered.connect(self.FeatureNotReady)
@@ -605,40 +601,41 @@ class Notepad(QMainWindow):
 
     def new_file(self):
         """Create a new file."""
-        # Check if there are unsaved changes
-        if self.check_saved_changes():
+        def clearTEW(): # clear TextEditWidget
             # Clear text edit
             self.textedit.clear()
             # Reset file path and title
             self.file_path = None
             self.setWindowTitle("Untitled - BunnyPad")
+            self.unsaved_changes_flag = False  # Reset flag after creation of new file
+        # Check if there are unsaved changes
+        if not self.unsaved_changes_flag:
+            clearTEW()
+        else:
+            self.warn_unsaved_changes()
+            clearTEW()
     def open_file(self):
-        filedialog = QFileDialog
-        file_dir = filedialog.getOpenFileName(
-            title="Select file",
-        )
-        filename = os.path.basename(file_dir).split('/')[-1]
+        def file_open():
+            file_types = "Text Files (*.txt);;Log Files (*.log);;Info files (*.nfo);;Batch files (*.bat);;Windows Command Script files (*.cmd);;VirtualBasicScript files (*.vbs);;JSON files (*.json);;Python Source files (*.py);;All Supported File Types (*.txt *.log *.nfo *.bat *.cmd *.vbs *.json *.py);;All Files (*.*)"
+            file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", file_types)
+            if file_path:
+                try:
+                    with open(file_path, 'r') as file:
+                        text = file.read()
+                        self.textedit.setText(text)
+                        self.file_path = file_path
+                        self.setWindowTitle(f"{os.path.basename(file_path)} - BunnyPad")
+                        self.open_file_ran = True
+                    if file_path.endswith(('.json', '.py')):
+                        QMessageBox.warning(self, "Warning", "Auto-indentation and syntax highlighting are currently unavailable for JSON and Python files.")
+                except UnicodeDecodeError:
+                    QMessageBox.critical(self, "Error", "Unicode Error: Cannot open file")
+        if not self.unsaved_changes_flag:
+            file_open()
+        else:
+            self.warn_unsaved_changes()
+            file_open()
 
-        if file_dir:
-            try:
-                with open(file_dir, "r") as f:
-                    filedata = f.read()
-                    self.addTab(filename, filename, '')
-                    self.current_editor.setPlainText(filedata)
-
-                    # Check the first line of the text
-                    first_line = filedata.split('\n')[0].strip()
-                    if first_line == ".LOG":
-                        self.current_editor.append(str(datetime.datetime.now()))
-
-            except UnicodeDecodeError:
-                MessageBox(
-                    'Wrong Filetype! 📝',
-                    (
-                        "Make sure you've selected a valid file type. Also note that PDF, DOCX, Image Files, and RichTextFiles are NOT supported in BunnyPad as of now."
-                    ),
-                    self
-                )
     def save_file(self):
         """Save the file."""
         if not self.file_path:
@@ -648,6 +645,7 @@ class Notepad(QMainWindow):
             f.write(self.textedit.toPlainText())
         self.setWindowTitle(f"{os.path.basename(self.file_path)} - BunnyPad")
         self.unsaved_changes_flag = False  # Reset flag after saving
+        self.save_file_ran = True
     def closeEvent(self, event):
        # Show a message box before closing
        reply = QMessageBox.question(self,
@@ -666,6 +664,10 @@ class Notepad(QMainWindow):
 
     def handle_text_changed(self):
         self.unsaved_changes_flag = True
+        if self.open_file_ran == True or self.save_file_ran == True:
+            self.setWindowTitle(f"*{os.path.basename(self.file_path)} - BunnyPad")
+        else:
+            self.setWindowTitle("*Untitled - BunnyPad")
 
     def check_saved_changes(self):
         return not self.unsaved_changes_flag
@@ -695,7 +697,7 @@ class Notepad(QMainWindow):
     def file_print(self):
         dlg = QPrintDialog()
         if dlg.exec():
-            self.textedit.print_(dlg.printer())
+            self.textedit.print(dlg.printer())
     def update_statusbar(self):
         """Update status bar with cursor position."""
         cursor = self.textedit.textCursor()
@@ -747,40 +749,7 @@ class Notepad(QMainWindow):
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
-        """
-    def show_search_dialog(self):
-        # Prompt the user for the word to find
-        word_to_find, ok = QInputDialog.getText(self, "Find Word", "Enter a word:")
-        if ok and word_to_find:
-            self.search_word(word_to_find)
 
-    def find_next_instance(self):
-        cursor = self.textedit.textCursor()
-        selected_text = cursor.selectedText()
-        if selected_text:
-            # If text is already selected, search for the next instance
-            self.search_word(selected_text)
-        else:
-            # If no text is selected, show the search dialog
-            self.show_search_dialog()
-    def search_word(self, word_to_find):
-        cursor = self.textedit.textCursor()
-
-        # Reset previous selections
-        cursor.clearSelection()
-
-        # Determine search direction (up or down)
-        search_direction = QTextCursor.NextWord if cursor.selectionStart() < cursor.selectionEnd() else QTextCursor.PreviousCharacter
-
-        # Find the next occurrence of the user-specified word
-        while cursor.movePosition(search_direction, QTextCursor.KeepAnchor):
-            if cursor.selectedText().lower() == word_to_find.lower():
-                # Highlight the found word (you can customize the format)
-                format = QTextCharFormat()
-                format.setBackground(QColor("yellow"))  # Set the background color
-                cursor.mergeCharFormat(format)
-                break  # Stop after the first occurrence
-                """
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName("BunnyPad")
