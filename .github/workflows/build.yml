@@ -42,7 +42,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: github-actions
+        tag_name: github-actions-${{ steps.generate_timestamp.outputs.timestamp }}
         release_name: BunnyPad - Latest Snapshot - ${{ steps.generate_timestamp.outputs.timestamp }} - win_amd64
         draft: false
         prerelease: true
