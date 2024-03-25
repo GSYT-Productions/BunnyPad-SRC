@@ -1,9 +1,13 @@
-import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re
-from PyQt6.QtCore import *
-from fpdf import FPDF
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
-from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
-from PyQt6.QtPrintSupport import QPrintDialog
+try:
+    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re
+    from PyQt6.QtCore import *
+    from fpdf import FPDF
+    from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
+    from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
+    from PyQt6.QtPrintSupport import QPrintDialog
+except:
+    from os import system as cmd
+    cmd("pip install PyQt6 distro fpdf")
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -30,40 +34,48 @@ def identify_os():
         display_OS = f"macOS {mac_version} - Platform: {mac_platform}"
     elif os_name == "Windows":
         win_version = platform.release()
-        activation_status = platform.win32_edition()
-        display_OS = f"Windows {win_version} {activation_status}"
+        win_variant = platform.win32_edition()
+        if win_variant is None:
+            win_variant = "(Wine Environment?)"
+        display_OS = f"Windows {win_version} {win_variant}"
     else:
         display_OS = "Unknown OS"
     return display_OS
+
 class CharacterWidget(QWidget):
     characterSelected = pyqtSignal(str)
+
     def __init__(self, parent=None):
-        super(CharacterWidget, self).__init__(parent)
+        super().__init__(parent)
         self.displayFont = QFont()
         self.squareSize = 24
         self.columns = 16
         self.lastKey = -1
         self.setMouseTracking(True)
+
     def updateFont(self, fontFamily):
         self.displayFont.setFamily(fontFamily)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
+
     def updateSize(self, fontSize):
         fontSize, _ = fontSize.toInt()
         self.displayFont.setPointSize(fontSize)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
-        self.update() 
+        self.update()
+
     def updateStyle(self, fontStyle):
         fontDatabase = QFontDatabase()
         oldStrategy = self.displayFont.styleStrategy()
         self.displayFont = fontDatabase.font(self.displayFont.family(),
-                fontStyle, self.displayFont.pointSize())
+                                              fontStyle, self.displayFont.pointSize())
         self.displayFont.setStyleStrategy(oldStrategy)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
+
     def updateFontMerging(self, enable):
         if enable:
             self.displayFont.setStyleStrategy(QFont.PreferDefault)
@@ -71,27 +83,32 @@ class CharacterWidget(QWidget):
             self.displayFont.setStyleStrategy(QFont.NoFontMerging)
         self.adjustSize()
         self.update()
-    # Add the following method to the class
+
     def setColumns(self, columns):
         self.columns = columns
         self.adjustSize()
         self.update()
+
     def sizeHint(self):
         return QSize(self.columns * self.squareSize, int((65536 / self.columns) * self.squareSize))
+
     def mouseMoveEvent(self, event):
         widgetPosition = self.mapFromGlobal(event.globalPosition().toPoint())
         key = (widgetPosition.y() // self.squareSize) * self.columns + widgetPosition.x() // self.squareSize
-        text = '<p>Character: <span style="font-size: 24pt; font-family: %s">%s</span><p>Value: 0x%x' % (self.displayFont.family(), self._chr(key), key)
+        text = '<p>Character: <span style="font-size: 24pt; font-family: %s">%s</span><p>Value: 0x%x' % (
+            self.displayFont.family(), self._chr(key), key)
         QToolTip.showText(event.globalPosition().toPoint(), text, self)
+
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.lastKey = (event.y() // self.squareSize) * self.columns + event.x() // self.squareSize
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.lastKey = (event.pos().y() // self.squareSize) * self.columns + event.pos().x() // self.squareSize
             key_ch = self._chr(self.lastKey)
             if unicodedata.category(key_ch) != 'Cn':
                 self.characterSelected.emit(key_ch)
             self.update()
         else:
-            super(CharacterWidget, self).mousePressEvent(event)
+            super().mousePressEvent(event)
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(event.rect(), QColor("white"))
@@ -105,32 +122,32 @@ class CharacterWidget(QWidget):
         for row in range(beginRow, endRow + 1):
             for column in range(beginColumn, endColumn + 1):
                 painter.drawRect(column * self.squareSize,
-                        row * self.squareSize, self.squareSize,
-                        self.squareSize)
+                                 row * self.squareSize, self.squareSize,
+                                 self.squareSize)
         fontMetrics = QFontMetrics(self.displayFont)
         painter.setPen(QColor("black"))
         for row in range(beginRow, endRow + 1):
             for column in range(beginColumn, endColumn + 1):
                 key = row * self.columns + column
                 painter.setClipRect(column * self.squareSize,
-                        row * self.squareSize, self.squareSize,
-                        self.squareSize)
+                                    row * self.squareSize, self.squareSize,
+                                    self.squareSize)
                 if key == self.lastKey:
                     painter.fillRect(column * self.squareSize + 1,
-                            row * self.squareSize + 1, self.squareSize,
-                            self.squareSize, QColor("red"))
+                                     row * self.squareSize + 1, self.squareSize,
+                                     self.squareSize, QColor("red"))
                 key_ch = self._chr(key)
-                painter.drawText(column * self.squareSize + (self.squareSize // 2) - fontMetrics.horizontalAdvance(key_ch) // 2,
-                 row * self.squareSize + 4 + fontMetrics.ascent(),
-                 key_ch)
+                painter.drawText(column * self.squareSize + (self.squareSize // 2) - fontMetrics.horizontalAdvance(
+                    key_ch) // 2,
+                                 row * self.squareSize + 4 + fontMetrics.ascent(),
+                                 key_ch)
+
     @staticmethod
     def _chr(codepoint):
-            # Python v3.
-            return chr(codepoint)
-    def setColumns(self, columns):
-        self.columns = columns
-        self.adjustSize()
-        self.update()
+        # Python v3.
+        return chr(codepoint)
+
+
 class AboutDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(AboutDialog, self).__init__(*args, **kwargs)
@@ -148,7 +165,7 @@ class AboutDialog(QDialog):
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
         layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC"))
         layout.addWidget(QLabel("Hopping Past Opinions"))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.21996.6 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.0 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -456,9 +473,8 @@ class Notepad(QMainWindow):
         # Create Find action
         find_action = QAction(QIcon("images/find.png"), "Find...", self)
         find_action.setShortcut("Ctrl+F")  # Ctrl+F
-        find_action.setStatusTip("Currently in development...")
-        find_action.setShortcut("Ctrl+F")
-        find_action.triggered.connect(self.FeatureNotReady)
+        find_action.setStatusTip("Find a word...")
+        find_action.triggered.connect(self.find_function)
         # Create Replace action
         replace_action = QAction(QIcon("images/replace.png"), "Replace...", self)
         replace_action.setStatusTip("Currently in development...")
@@ -716,30 +732,42 @@ class Notepad(QMainWindow):
         self.statusbar.setVisible(not self.statusbar.isVisible())
     def about(self):
         AboutDialog().exec()
+
     def credits(self):
         CreditsDialog().exec()
+
     def FeatureNotReady(self):
         FeatureNotReady().exec()
+
     def cake(self):
         TheCakeIsALie().exec()
+
     def support(self):
         ContactUs().exec()
+
     def toggle_character_map(self, checked):
         character_dock.setVisible(checked)
+
     def insert_character(self, character):
         self.textedit.insertPlainText(character)
+
     def print_to_pdf(self):
-     	file_dialog = QFileDialog(self)
-     	file_dialog.setNameFilter("PDF Files (*.pdf)")
-     	file_dialog.setAcceptMode(QFileDialog.AcceptSave)
-     	file_dialog.setDefaultSuffix("pdf")
-     	if file_dialog.exec() == QFileDialog.Accepted:
-     	  file_path = file_dialog.selectedFiles()[0]
-     	  text = self.textedit.toPlainText()
-     	  save_as_pdf(text, file_path)
+        file_path, selected_filter = QFileDialog.getSaveFileName(self, "Print to PDF [Save as]", "", "PDF File (*.pdf)")
+        if file_path:
+            # Extract file extension from the selected filter using regular expressions
+            file_extension_match = re.search(r'\(\*\.(\w+)\)', selected_filter)
+            if file_extension_match:
+                file_extension = '.' + file_extension_match.group(1)
+                # Append the file extension to the file path if it's not already there
+                if not file_path.endswith(file_extension):
+                    file_path += file_extension
+            text = self.textedit.toPlainText()
+            save_as_pdf(text, file_path)
+
     def dateTime(self):
         cdate = str(datetime.datetime.now())
         self.textedit.append(cdate)
+
     def go_to_line(self):
         line_number, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", value=1)
         cursor = self.textedit.textCursor()
@@ -749,6 +777,22 @@ class Notepad(QMainWindow):
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
+
+    def find_function(self):
+        def find_word(word):
+            cursor = self.textEdit.document().find(word)
+
+            if not cursor.isNull():
+                self.textEdit.setTextCursor(cursor)
+                self.textEdit.ensureCursorVisible()
+
+        word_to_find, ok = QInputDialog.getText(
+            self,
+            "Find Word",
+            "Enter the word you want to find:"
+        )
+        if ok and word_to_find:
+            find_word(word_to_find)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
