@@ -1,5 +1,20 @@
+"""
+ ____                          ____           _ 
+| __ ) _   _ _ __  _ __  _   _|  _ \ __ _  __| |
+|  _ \| | | | '_ \| '_ \| | | | |_) / _` |/ _` |
+| |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
+|____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
+                         |___/                  
+
+
+Mini Changelog:
+- Finally Stabilized, Switching to 22000 BNs
+- Added some more easter eggs
+- Began to lay framework for some more functionality.
+"""
+
 try:
-    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re
+    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random
     from PyQt6.QtCore import *
     from fpdf import FPDF
     from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
@@ -164,7 +179,30 @@ class AboutDialog(QDialog):
         layout.addWidget(logo)
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
         layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC"))
-        layout.addWidget(QLabel("Hopping Past Opinions"))
+        original_phrase = "pet the bunny"
+        anagrams = [
+            "tnentbpu y he",
+            "the pet bunny",
+            "tnebyt uhn pe",
+            "eupntbeyh  tn",
+            "ehtueyn pbn t",
+            "the bunny pet",
+            "bunny pet the",
+            "phube yent tn",
+            "tp ne tuenyhb",
+            "tnentbpu y he",
+            original_phrase # Original phrase as the 11th possibility
+            ]
+        selected_anagram = random.choice(anagrams)
+        phrases = ["``It was a pleasure to [learn]``",
+                   "``So it was the hand that started it all ... \nHis hands had been infected, and soon it would be his arms ... \nHis hands were ravenous.``",
+                   "Hopping past opinions",
+                   "``Is it true that a long time ago, firemen used to put out fires and not burn books?``",
+                   "``Fahrenheit 451, the temperature at which paper spontaneously combusts``",
+                   "``Do you want to know what's inside all these books? Insanity. The Eels want to measure their place in the universe,\n so they turn to these novels about non-existent people. Or worse, philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. Better yet, none.``",
+                   selected_anagram]
+        random_phrase = random.choice(phrases)
+        layout.addWidget(QLabel(random_phrase))
         layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.0 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
@@ -299,10 +337,9 @@ class ContactUs(QDialog):
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
-        # Set window properties
         self.setWindowTitle("Untitled - BunnyPad")
         self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-        self.setGeometry(100, 100, 800, 600)# Apply the style sheet
+        self.setGeometry(100, 100, 800, 600)
         self.file_path = None
         self.unsaved_changes_flag = False
         self.open_file_ran = False
@@ -415,6 +452,7 @@ class Notepad(QMainWindow):
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
+        # The Salamander eats its own tail.
         # Create Edit menu
         edit_menu = QMenu("Edit", self)
         menubar.addMenu(edit_menu)
@@ -455,7 +493,7 @@ class Notepad(QMainWindow):
         delete_action.triggered.connect(lambda: self.textedit.textCursor().deleteChar())
         edit_menu.addAction(delete_action)
         # Create Date/Time Action
-        datetime_action = QAction(QIcon("images/temp.png"), "Date and Time", self)
+        datetime_action = QAction(QIcon("images/datetime.png"), "Date and Time", self)
         datetime_action.setStatusTip("Inserts the current date and time, including milliseconds.")
         datetime_action.setShortcut("F5")
         datetime_action.triggered.connect(self.dateTime)
