@@ -4,13 +4,7 @@
 |  _ \| | | | '_ \| '_ \| | | | |_) / _` |/ _` |
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
-                         |___/                  
-
-
-Mini Changelog:
-- Finally Stabilized, Switching to 22000 BNs
-- Added some more easter eggs
-- Began to lay framework for some more functionality.
+                         |___/                  Mini Changelog: Finally Stabilized, Switching to 22000 BNs; Added some more easter eggs; Began to lay framework for some more functionality.
 """
 
 try:
