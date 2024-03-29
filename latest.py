@@ -4,7 +4,8 @@
 |  _ \| | | | '_ \| '_ \| | | | |_) / _` |/ _` |
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
-                         |___/                  Mini Changelog: Finally Stabilized, Switching to 22000 BNs; Added some more easter eggs; Began to lay framework for some more functionality.
+                         |___/                  
+                         Mini Changelog: Finally Stabilized, Switching to 22000 BNs; Added some more easter eggs; Began to lay framework for some more functionality.
 """
 
 try:
@@ -194,6 +195,7 @@ class AboutDialog(QDialog):
                    "``Is it true that a long time ago, firemen used to put out fires and not burn books?``",
                    "``Fahrenheit 451, the temperature at which paper spontaneously combusts``",
                    "``Do you want to know what's inside all these books? Insanity. The Eels want to measure their place in the universe,\n so they turn to these novels about non-existent people. Or worse, philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. Better yet, none.``",
+                   "``what a thing human is, one have a no loyalty and second have hope of it lmao`` - ItzAzan",
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
