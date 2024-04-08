@@ -5,7 +5,7 @@
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
-                         Mini Changelog: Finally Stabilized, Switching to 22000 BNs; Added some more easter eggs; Began to lay framework for some more functionality.
+                         Mini Changelog: Fixed missing Find function in Edit menu; Begin framework for GoToLine function.
 """
 
 try:
@@ -199,7 +199,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.0 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.1 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -509,6 +509,14 @@ class Notepad(QMainWindow):
         find_action.setShortcut("Ctrl+F")  # Ctrl+F
         find_action.setStatusTip("Find a word...")
         find_action.triggered.connect(self.find_function)
+        edit_menu.addAction(find_action)
+        # Go to line
+        gtl_action = QAction(QIcon("images/find.png"), "Go To Line", self)
+        gtl_action.setShortcut("Ctrl+G")  # Ctrl+G
+        gtl_action.setStatusTip("Go to a specified line")
+        # gtl_action.triggered.connect(self.go_to_line)
+        gtl_action.triggered.connect(self.FeatureNotReady)
+        edit_menu.addAction(gtl_action)
         # Create Replace action
         replace_action = QAction(QIcon("images/replace.png"), "Replace...", self)
         replace_action.setStatusTip("Currently in development...")
@@ -646,8 +654,6 @@ class Notepad(QMainWindow):
         self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle("Untitled - BunnyPad")
         self.show()
-        #def documentWasModified(self):
-        #	self.setWindowModified(self.textEdit.document().isModified())
 
     def new_file(self):
         """Create a new file."""
@@ -801,7 +807,7 @@ class Notepad(QMainWindow):
     def dateTime(self):
         cdate = str(datetime.datetime.now())
         self.textedit.append(cdate)
-
+"""
     def go_to_line(self):
         line_number, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", value=1)
         cursor = self.textedit.textCursor()
@@ -811,7 +817,7 @@ class Notepad(QMainWindow):
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
-
+"""
     def find_function(self):
         def find_word(word):
             cursor = self.textEdit.document().find(word)
