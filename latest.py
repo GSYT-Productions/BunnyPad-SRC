@@ -807,7 +807,6 @@ class Notepad(QMainWindow):
     def dateTime(self):
         cdate = str(datetime.datetime.now())
         self.textedit.append(cdate)
-"""
     def go_to_line(self):
         line_number, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", value=1)
         cursor = self.textedit.textCursor()
@@ -817,7 +816,6 @@ class Notepad(QMainWindow):
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
-"""
     def find_function(self):
         def find_word(word):
             cursor = self.textEdit.document().find(word)
