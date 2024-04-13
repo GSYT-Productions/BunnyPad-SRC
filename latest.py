@@ -227,7 +227,7 @@ class CreditsDialog(QDialog):
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('./gsyt.png')))
         layout.addWidget(logo)
-        layout.addWidget(QLabel("GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her \n\nGroove & I-San: Beta Testers; Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get it off the ground and known by a few people, owner of DevSanc \n Jpbjbi: Assisting with Debugging and updating! \n Ducky: Porting the app to Android \n ZeRoTeCh00: said kind words about BunnyPad during his stream on 2 September 2023 \n ComeOnLinux: Porting the app to Linux, clean-room reverse engineering the app \n DinoDude: Github contributor"))
+        layout.addWidget(QLabel("GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her \nI-San: Beta Tester; Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get it off the ground and known by a few people, owner of DevSanc \n ZeRoTeCh00: said kind words about BunnyPad during his stream on 2 September 2023 \n ByPad: Porting the app to Linux, clean-room reverse engineering the app \n DinoDude: Github contributor"))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
         # Add click event for escargot easter egg
