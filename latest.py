@@ -5,7 +5,7 @@ r"""
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
-                         Mini Changelog: Fixed missing Find function in Edit menu; Begin framework for GoToLine function.
+                         Mini Changelog: Fixed Syntax Warning; Updated copyright and credits; Fixed GTL Function; Preparing to add "style.bunpad" as style sheet file
 """
 
 try:
@@ -342,6 +342,15 @@ class Notepad(QMainWindow):
         self.save_file_ran = False
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
+        """
+        # Read the contents of "style.bunpad"
+        with open("style.bunpad", "r") as f:
+            stylesheet = f.read()
+
+        # Set the stylesheet
+        self.setStyleSheet(stylesheet)
+        """
+        
         self.setStyleSheet("""
         /* Set the background color of icons */
         QLabel[icon="true"] {
@@ -514,8 +523,8 @@ class Notepad(QMainWindow):
         gtl_action = QAction(QIcon("images/find.png"), "Go To Line", self)
         gtl_action.setShortcut("Ctrl+G")  # Ctrl+G
         gtl_action.setStatusTip("Go to a specified line")
-        # gtl_action.triggered.connect(self.go_to_line)
-        gtl_action.triggered.connect(self.FeatureNotReady)
+        gtl_action.triggered.connect(self.go_to_line)
+        # gtl_action.triggered.connect(self.FeatureNotReady)
         edit_menu.addAction(gtl_action)
         # Create Replace action
         replace_action = QAction(QIcon("images/replace.png"), "Replace...", self)
@@ -810,12 +819,13 @@ class Notepad(QMainWindow):
     def go_to_line(self):
         line_number, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", value=1)
         cursor = self.textedit.textCursor()
-        cursor.movePosition(QTextCursor.Start)
-        cursor.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, line_number - 1)
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor, line_number - 1)
         # Set the cursor as the new cursor for the QTextEdit
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
+
     def find_function(self):
         def find_word(word):
             cursor = self.textEdit.document().find(word)
