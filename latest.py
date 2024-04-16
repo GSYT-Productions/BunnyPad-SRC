@@ -173,7 +173,7 @@ class AboutDialog(QDialog):
         logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
         layout.addWidget(logo)
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
-        layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC"))
+        layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC; Copyright © 2024 The BunnyPad Authors"))
         original_phrase = "pet the bunny"
         anagrams = [
             "tnentbpu y he",
@@ -199,7 +199,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.1 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.3 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -227,7 +227,7 @@ class CreditsDialog(QDialog):
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('./gsyt.png')))
         layout.addWidget(logo)
-        layout.addWidget(QLabel("GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her \n\nI-San: Beta Tester\n Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get it off the ground and known by a few people, owner of DevSanc \n ZeRoTeCh00: said kind words about BunnyPad during his stream on 2 September 2023 \n ByPad: Porting the app to Linux, clean-room reverse engineering the app \n DinoDude: Github contributor"))
+        layout.addWidget(QLabel("GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her \n\nI-San: Beta Tester\n Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get it off the ground and known by a few people, owner of DevSanc \n ZeRoTeCh00: said kind words about BunnyPad during his stream on 2 September 2023 \n ByPad: Porting the app to Linux, clean-room reverse engineering the app \n DinoDude: Github contributor \n BunnyFndr: Icon Finder and Bug Tester"))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
         # Add click event for escargot easter egg
@@ -393,7 +393,7 @@ class Notepad(QMainWindow):
             color: white;
             }
         """)
-        # I am a friggin idiot!
+        # Need to set up so theme comes from external, css-like file
         # Set up text edit widget
         # self.textedit = self.textedit.setAcceptRichText(True)
         self.setCentralWidget(self.textedit)
