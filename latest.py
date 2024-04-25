@@ -5,17 +5,19 @@ r"""
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
-                         Mini Changelog: Fixed Syntax Warning; Updated copyright and credits; Fixed GTL Function; Preparing to add "style.bunpad" as style sheet file
+                         Mini Changelog: Rewrote some code, updated MSG2PB, preparing for 22621
 """
 
 try:
     import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random
     from PyQt6.QtCore import *
     from fpdf import FPDF
-    from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog
-    from PyQt6.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
+    from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
+                                 QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
+                                 QMessageBox, QInputDialog)
+    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
     from PyQt6.QtPrintSupport import QPrintDialog
-except:
+except ImportError:
     from os import system as cmd
     cmd("pip install PyQt6 distro fpdf")
 def save_as_pdf(text, file_path):
@@ -37,19 +39,18 @@ def identify_os():
         linux_distro_version = distro.version()
         linux_distro_name = distro.name()
         linux_version = platform.release()
-        display_OS = f"Linux {linux_distro_name} {linux_distro_version} - Version: {linux_version}"
+        display_OS = f"Linux {linux_distro_name} {linux_distro_version} - Kernel: {linux_version}"
     elif os_name == "Darwin":
         mac_version = platform.mac_ver()[0]
-        mac_platform = "Silicon" if platform.processor() == "arm" else "Intel"
-        display_OS = f"macOS {mac_version} - Platform: {mac_platform}"
+        mac_platform = "Apple Silicon" if platform.processor() == "arm" else "Intel"
+        display_OS = f"macOS {mac_version} - Chip: {mac_platform}"
     elif os_name == "Windows":
         win_version = platform.release()
         win_variant = platform.win32_edition()
-        if win_variant is None:
-            win_variant = "(Wine Environment?)"
+        win_variant = win_variant if win_variant else "(Wine Environment?)"
         display_OS = f"Windows {win_version} {win_variant}"
     else:
-        display_OS = "Unknown OS"
+        display_OS = "Unknown Operating System"
     return display_OS
 
 class CharacterWidget(QWidget):
@@ -199,7 +200,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.3 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.9 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -245,17 +246,17 @@ class CreditsDialog(QDialog):
         msg_box.exec()
 class FeatureNotReady(QDialog):
     def __init__(self, parent=None):
-        super(FeatureNotReady, self).__init__(parent)
-        self.setWindowTitle("Feature Not Ready; Work In Progress")
-        self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        super().__init__(parent)
+        self.setWindowTitle("Feature Not Ready: Work In Progress")
+        self.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
         layout = QVBoxLayout(self)
         title = QLabel("BunnyPad™")
         font = title.font()
         font.setPointSize(20)
         title.setFont(font)
         logo = QLabel()
-        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
-        message = QLabel("The requested feature caused instabilities during the tests, and has been disabled until they can be fixed. Sorry.")
+        logo.setPixmap(QPixmap(os.path.join('bunnypad.png')))
+        message = QLabel("The requested feature caused instabilities during testing and has been disabled until further notice. We apologize for the inconvenience.")
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept)
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -264,11 +265,16 @@ class FeatureNotReady(QDialog):
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         # Add click event for song quote easter egg
         logo.mousePressEvent = self.activate_see_you_again_easter_egg
+
     def activate_see_you_again_easter_egg(self, event):
-        song = "It's been a long day without you my friend \n and I'll tell you all about it when I see you again \n We've come a long way from where we began \n and I'll tell you all about it when I see you again \n when I see you again"
+        song = ("It's been a long day without you, my friend, \n"
+                "And I'll tell you all about it when I see you again. \n"
+                "We've come a long way from where we began, \n"
+                "And I'll tell you all about it when I see you again, \n"
+                "When I see you again.")
         msg_box = QMessageBox()
-        msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-        msg_box.setWindowTitle("See you again")
+        msg_box.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
+        msg_box.setWindowTitle("See You Again")
         msg_box.setText(song)
         msg_box.exec()
 class TheCakeIsALie(QDialog):
@@ -334,7 +340,7 @@ class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Untitled - BunnyPad")
-        self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        self.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
         self.setGeometry(100, 100, 800, 600)
         self.file_path = None
         self.unsaved_changes_flag = False
@@ -342,53 +348,51 @@ class Notepad(QMainWindow):
         self.save_file_ran = False
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
-        """
+        # The following code is commented out; remove the triple quotes to use it.
         # Read the contents of "style.bunpad"
-        with open("style.bunpad", "r") as f:
-            stylesheet = f.read()
-
+        # with open("style.bunpad", "r") as f:
+        #     stylesheet = f.read()
         # Set the stylesheet
-        self.setStyleSheet(stylesheet)
-        """
+        # self.setStyleSheet(stylesheet)
         
         self.setStyleSheet("""
         /* Set the background color of icons */
         QLabel[icon="true"] {
             background-color: #0078D7;
-            }
+        }
         /* Set the background color of toolbars */
         QToolBar {
             background-color: #0078D7;
-            }
+        }
         /* Set the background color of the window */
         QMainWindow {
             background-color: #8C49F0;
-            }
+        }
         /* Set the color of the titlebar text */
         QMainWindow::title {
             color: white;
-            }
+        }
         /* Set the color of the titlebar background */
         QMainWindow::titleBar {
             background-color: #8C49F0;
-            }
+        }
         /* Set the background color of the status bar */
         QStatusBar {
             color: white;
             background-color: #0078D7;
-            }
+        }
         /* Set the background color of menus */
         QMenuBar {
             background-color: #8C49F0;
-            }
+        }
         /* Set the text color of menus */
         QMenuBar::item {
             color: white;
-            }
+        }
         /* Set the background color of menu items */
         QMenu {
             background-color: #6AA5F3;
-            }
+        }
         /* Set the text color of menu items */
         QMenu::item {
             color: white;
@@ -404,7 +408,7 @@ class Notepad(QMainWindow):
         """)
         # Need to set up so theme comes from external, css-like file
         # Set up text edit widget
-        # self.textedit = self.textedit.setAcceptRichText(True)
+        self.textedit.setAcceptRichText(True)
         self.setCentralWidget(self.textedit)
         # Create menu bar
         menubar = QMenuBar(self)
@@ -444,6 +448,7 @@ class Notepad(QMainWindow):
         print_to_pdf_action.triggered.connect(self.print_to_pdf)
         print_to_pdf_action.setShortcut('Ctrl+Shift+P')
         file_menu.addAction(print_to_pdf_action)
+        # The Salamander eats its own tail.
         print_action = QAction(QIcon(os.path.join('images', 'printer.png')), "Print...", self)
         print_action.setStatusTip("Print current page")
         print_action.triggered.connect(self.file_print)
@@ -457,7 +462,6 @@ class Notepad(QMainWindow):
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        # The Salamander eats its own tail.
         # Create Edit menu
         edit_menu = QMenu("Edit", self)
         menubar.addMenu(edit_menu)
@@ -752,7 +756,7 @@ class Notepad(QMainWindow):
             self.save_file()
 
     def warn_unsaved_changes(self):
-        ret = QMessageBox.warning(self, "BunnyPad", "The document has been modified.\nDo you want to save your changes?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+        ret = QMessageBox.warning(self, "BunnyPad", "The document has been modified. Would you like to save your changes?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
         if ret == QMessageBox.StandardButton.Save:
             return self.save_file()
         elif ret == QMessageBox.StandardButton.Cancel:
@@ -848,7 +852,7 @@ if __name__ == '__main__':
     app.setOrganizationName("GSYT Productions")
     BunnyPad = Notepad()
     app.setStyle("Fusion")
-    # Create Character Map Widget and add it to the Notepad application
+    # Create the Character Map Widget and add it to the Notepad application
     character_map = CharacterWidget()
     character_map.characterSelected.connect(BunnyPad.insert_character)
     character_map_layout = QVBoxLayout()
@@ -857,9 +861,9 @@ if __name__ == '__main__':
     character_map_widget.setLayout(character_map_layout)
     character_dock = QDockWidget("Character Map", BunnyPad)
     character_dock.setWidget(character_map_widget)
-    character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
-    character_dock.hide()  # Set the widget to be initially hidden
-    BunnyPad.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, character_dock)
+    character_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+    character_dock.hide()  # Initially hide the widget
+    BunnyPad.addDockWidget(Qt.RightDockWidgetArea, character_dock)
     display_text = identify_os()
     BunnyPad.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
