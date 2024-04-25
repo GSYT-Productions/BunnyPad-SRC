@@ -211,7 +211,7 @@ class AboutDialog(QDialog):
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Message to PBbunnypower")
         msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-        msg_box.setText("BunnyPad's become so popular that it's controversial within the tech community. I guess it was done by my Python fluency. The initial opinions, we blew them away. We work hard and then we play; I can do this all dang day.")
+        msg_box.setText("BunnyPad is successful. We did it. People might try to destroy it, but we will not back down.")
         msg_box.exec()
 class CreditsDialog(QDialog):
     def __init__(self, *args, **kwargs):
