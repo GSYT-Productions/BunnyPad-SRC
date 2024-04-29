@@ -200,7 +200,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22000.9 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.1 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
