@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [ latest-freshlyplanted ]
+    branches: [ latest-carrotpatch ]
 
 jobs:
   build:
