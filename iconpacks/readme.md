@@ -1,6 +1,6 @@
 # This is for the various official icon packs that can be used in BunnyPad. If you want to make your own iconpack, please do the following:
 Name the icon images as follows:
-  "selectall.png"
+  ```"selectall.png"
   "share.png"
   "support.png"
   "team.png"
@@ -26,7 +26,7 @@ Name the icon images as follows:
   "saveas.png"
   "cake.png"
   "nocake.png"
-  "packinfo.txt"
+  "packinfo.txt"```
 put those in a "images/" directory,
 # For "packinfo.txt", please use the following format:
 ```
