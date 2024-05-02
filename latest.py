@@ -5,7 +5,7 @@ r"""
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
-                         Mini Changelog: Rewrote some code, updated MSG2PB, preparing for 22621
+                         Mini Changelog: moved stylesheet to external file; rounded some corners, preparing for 22631
 """
 
 try:
@@ -200,7 +200,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.1 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.2 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -325,6 +325,12 @@ class ContactUs(QDialog):
         info_label.setOpenExternalLinks(True)
         layout.addWidget(info_label)
         logo.mousePressEvent = self.activate_galaxynote7_easter_egg
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(self.accept)
+        layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(info_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
     def activate_galaxynote7_easter_egg(self, event):
         # galaxynote7 easter egg code
         msg_box = QMessageBox()
@@ -348,67 +354,8 @@ class Notepad(QMainWindow):
         self.save_file_ran = False
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
-        # The following code is commented out; remove the triple quotes to use it.
-        # Read the contents of "style.bunpad"
-        # with open("style.bunpad", "r") as f:
-        #     stylesheet = f.read()
-        # Set the stylesheet
-        # self.setStyleSheet(stylesheet)
-        
-        self.setStyleSheet("""
-        /* Set the background color of icons */
-        QLabel[icon="true"] {
-            background-color: #0078D7;
-        }
-        /* Set the background color of toolbars */
-        QToolBar {
-            background-color: #0078D7;
-        }
-        /* Set the background color of the window */
-        QMainWindow {
-            background-color: #8C49F0;
-        }
-        /* Set the color of the titlebar text */
-        QMainWindow::title {
-            color: white;
-        }
-        /* Set the color of the titlebar background */
-        QMainWindow::titleBar {
-            background-color: #8C49F0;
-        }
-        /* Set the background color of the status bar */
-        QStatusBar {
-            color: white;
-            background-color: #0078D7;
-        }
-        /* Set the background color of menus */
-        QMenuBar {
-            background-color: #8C49F0;
-        }
-        /* Set the text color of menus */
-        QMenuBar::item {
-            color: white;
-        }
-        /* Set the background color of menu items */
-        QMenu {
-            background-color: #6AA5F3;
-        }
-        /* Set the text color of menu items */
-        QMenu::item {
-            color: white;
-            }
-        /* Set the background color of dialog windows */
-        QDialog {
-            background-color: #8C49F0;
-            }
-        /* Set the text color of dialog windows */
-        QDialog QLabel {
-            color: white;
-            }
-        """)
-        # Need to set up so theme comes from external, css-like file
         # Set up text edit widget
-        self.textedit.setAcceptRichText(True)
+        self.textedit.setAcceptRichText(False)
         self.setCentralWidget(self.textedit)
         # Create menu bar
         menubar = QMenuBar(self)
@@ -448,7 +395,6 @@ class Notepad(QMainWindow):
         print_to_pdf_action.triggered.connect(self.print_to_pdf)
         print_to_pdf_action.setShortcut('Ctrl+Shift+P')
         file_menu.addAction(print_to_pdf_action)
-        # The Salamander eats its own tail.
         print_action = QAction(QIcon(os.path.join('images', 'printer.png')), "Print...", self)
         print_action.setStatusTip("Print current page")
         print_action.triggered.connect(self.file_print)
@@ -502,6 +448,7 @@ class Notepad(QMainWindow):
         delete_action.triggered.connect(lambda: self.textedit.textCursor().deleteChar())
         edit_menu.addAction(delete_action)
         # Create Date/Time Action
+        # The Salamander eats its own tail.
         datetime_action = QAction(QIcon("images/datetime.png"), "Date and Time", self)
         datetime_action.setStatusTip("Inserts the current date and time, including milliseconds.")
         datetime_action.setShortcut("F5")
@@ -852,6 +799,10 @@ if __name__ == '__main__':
     app.setOrganizationName("GSYT Productions")
     BunnyPad = Notepad()
     app.setStyle("Fusion")
+    file = QFile("stylesheet.qss")
+    file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
+    stream = QTextStream(file)
+    app.setStyleSheet(stream.readAll())
     # Create the Character Map Widget and add it to the Notepad application
     character_map = CharacterWidget()
     character_map.characterSelected.connect(BunnyPad.insert_character)
@@ -861,9 +812,9 @@ if __name__ == '__main__':
     character_map_widget.setLayout(character_map_layout)
     character_dock = QDockWidget("Character Map", BunnyPad)
     character_dock.setWidget(character_map_widget)
-    character_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+    character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
     character_dock.hide()  # Initially hide the widget
-    BunnyPad.addDockWidget(Qt.RightDockWidgetArea, character_dock)
+    BunnyPad.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, character_dock)
     display_text = identify_os()
     BunnyPad.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
