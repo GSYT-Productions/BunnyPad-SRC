@@ -342,14 +342,6 @@ class ContactUs(QDialog):
         layout.addWidget(logo)
         msg_box.setText("So I heard that the Samsung Galaxy Note 7 was the bomb, rather literally")
         msg_box.exec()
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QLCDNumber
-)
-from PyQt6.QtGui import QIcon, QPixmap
-from PyQt6.QtCore import pyqtSlot, Qt
-import webbrowser
-
 class DownloadOptions(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
