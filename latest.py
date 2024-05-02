@@ -9,12 +9,12 @@ r"""
 """
 
 try:
-    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random
+    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser
     from PyQt6.QtCore import *
     from fpdf import FPDF
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
-                                 QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
-                                 QMessageBox, QInputDialog)
+                                 QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
+                                 QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget)
     from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
@@ -174,7 +174,7 @@ class AboutDialog(QDialog):
         logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
         layout.addWidget(logo)
         layout.addWidget(QLabel("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]"))
-        layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC; Copyright © 2024 The BunnyPad Authors"))
+        layout.addWidget(QLabel("Copyright © 2023-2024 GSYT Productions, LLC\nCopyright © 2024 The BunnyPad Contributors"))
         original_phrase = "pet the bunny"
         anagrams = [
             "tnentbpu y he",
@@ -190,17 +190,17 @@ class AboutDialog(QDialog):
             original_phrase # Original phrase as the 11th possibility
             ]
         selected_anagram = random.choice(anagrams)
-        phrases = ["``It was a pleasure to [learn]``",
-                   "``So it was the hand that started it all ... \nHis hands had been infected, and soon it would be his arms ... \nHis hands were ravenous.``",
+        phrases = ["\"It was a pleasure to [learn]\"",
+                   "\"So it was the hand that started it all ... \nHis hands had been infected, and soon it would be his arms ... \nHis hands were ravenous.\"",
                    "Hopping past opinions",
-                   "``Is it true that a long time ago, firemen used to put out fires and not burn books?``",
-                   "``Fahrenheit 451, the temperature at which paper spontaneously combusts``",
+                   "\"Is it true that a long time ago, firemen used to put out fires and not burn books?\"",
+                   "\"Fahrenheit 451, the temperature at which paper spontaneously combusts\"",
                    "``Do you want to know what's inside all these books? Insanity. The Eels want to measure their place in the universe,\n so they turn to these novels about non-existent people. Or worse, philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. Better yet, none.``",
-                   "``what a thing human is, one have a no loyalty and second have hope of it lmao`` - ItzAzan",
+                   "\"what a thing human is, one have a no loyalty and second have hope of it lmao\" - ItzAzan",
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.2 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.3 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -342,6 +342,78 @@ class ContactUs(QDialog):
         layout.addWidget(logo)
         msg_box.setText("So I heard that the Samsung Galaxy Note 7 was the bomb, rather literally")
         msg_box.exec()
+class DownloadOptions(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Download Options")
+        self.setWindowIcon(QIcon(QPixmap('./bunnypad.png')))
+        
+        main_layout = QVBoxLayout(self)
+        
+        # Text label
+        text_label = QLabel("Where do you want to go today?\n\nChoose one of the available download options:")
+        main_layout.addWidget(text_label)
+        
+        # Buttons layout
+        buttons_layout = QHBoxLayout()
+        main_layout.addLayout(buttons_layout)
+        
+        # Map of shortened forms to full names
+        button_names = {
+            "Latest Stable Source": "Latest Stable Source",
+            "Latest Stable Release": "Latest Stable Release",
+            "Latest CarrotPatch Build": "Latest CarrotPatch Build",
+            "IconPacks": "IconPacks",
+            "Stylesheets": "Stylesheets"
+        }
+        
+        # Create buttons
+        for full_name, object_name in button_names.items():
+            button = QPushButton(full_name)
+            button.setObjectName(object_name)
+            button.clicked.connect(getattr(self, f"on_{object_name.replace(' ', '_')}_clicked"))
+            buttons_layout.addWidget(button)
+        
+        # LCD number widget
+        self.lcd_number = QLCDNumber()
+        self.lcd_number.setObjectName("EasterEgg_DownloadOptions")
+        self.lcd_number.setSegmentStyle(QLCDNumber.SegmentStyle.Flat)
+        self.lcd_number.setDigitCount(5)
+        self.lcd_number.display(69)
+        main_layout.addWidget(self.lcd_number)
+
+        # Close button
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.reject)
+        main_layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        
+
+    @pyqtSlot()
+    def on_Latest_Stable_Release_clicked(self):
+        url = "https://garrystraityt.itch.io/bunnypad"
+        webbrowser.open(url)
+
+    @pyqtSlot()
+    def on_Latest_Stable_Source_clicked(self):
+        url = "https://github.com/GSYT-Productions/BunnyPad-SRC/"
+        webbrowser.open(url)
+
+    @pyqtSlot()
+    def on_Latest_CarrotPatch_Build_clicked(self):
+        url = "https://github.com/GSYT-Productions/BunnyPad-SRC/tree/latest-carrotpatch"
+        webbrowser.open(url)
+
+    @pyqtSlot()
+    def on_IconPacks_clicked(self):
+        url = "https://gsyt-productions.github.io/BunnyPadCustomizer/IconPacks"
+        webbrowser.open(url)
+
+    @pyqtSlot()
+    def on_Stylesheets_clicked(self):
+        url = "https://gsyt-productions.github.io/BunnyPadCustomizer/stylesheets"
+        webbrowser.open(url)
+
+        
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -368,6 +440,7 @@ class Notepad(QMainWindow):
         new_action.setStatusTip("Creates a new file.")
         new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self.new_file)
+        # The Salamander eats its own tail.
         file_menu.addAction(new_action)
         # Create Open action
         open_action = QAction(QIcon("images/open.png"), "Open...", self)
@@ -448,7 +521,6 @@ class Notepad(QMainWindow):
         delete_action.triggered.connect(lambda: self.textedit.textCursor().deleteChar())
         edit_menu.addAction(delete_action)
         # Create Date/Time Action
-        # The Salamander eats its own tail.
         datetime_action = QAction(QIcon("images/datetime.png"), "Date and Time", self)
         datetime_action.setStatusTip("Inserts the current date and time, including milliseconds.")
         datetime_action.setShortcut("F5")
@@ -533,11 +605,12 @@ class Notepad(QMainWindow):
         contact_support_action.triggered.connect(self.support)
         help_menu.addAction(contact_support_action)
         # For v11: Source Code Download
-        source_action = QAction(QIcon("./bpdl.png"), "Download the latest source code", self)
-        source_action.setStatusTip("For BunnyPad v11+")
-        source_action.setShortcut("Ctrl+J")
-        source_action.triggered.connect(self.FeatureNotReady)
-        help_menu.addAction(source_action)
+        download_action = QAction(QIcon("./bpdl.png"), "Download BunnyPad Tools", self)
+        download_action.setStatusTip("For BunnyPad Users to Customize their BunnyPad")
+        download_action.setShortcut("Ctrl+J")
+        # download_action.triggered.connect(self.download)
+        download_action.triggered.connect(self.FeatureNotReady)
+        help_menu.addAction(download_action)
         # Create the statusbar action
         statusbar_action = QAction("Show statusbar", self, checkable=True)
         statusbar_action.setStatusTip("Toggle statusbar")
@@ -744,7 +817,8 @@ class Notepad(QMainWindow):
 
     def support(self):
         ContactUs().exec()
-
+    def download(self):
+        DownloadOptions().exec()
     def toggle_character_map(self, checked):
         character_dock.setVisible(checked)
 
