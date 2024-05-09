@@ -1,6 +1,6 @@
 # BunnyPad
 BunnyPad: The Newest and Cutest Way to take notes!
-
+[![GitHub All Releases](https://img.shields.io/github/downloads/)]()
 
 These people helped get the program to its current state:
 
