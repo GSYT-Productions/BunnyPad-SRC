@@ -16,6 +16,6 @@ BunnyFndr - Main Co-developer
 
 ZeRoTeCh00 - Promoted BunnyPad during stream
 
-OpenAI's ChatGPT - Helped with bugchecking the program
+UnityAI - Helped with bugchecking the program
 
 # Please download the source code WITH the package, as the images needed for the exe are included with the source code.
