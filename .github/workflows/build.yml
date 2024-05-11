@@ -29,7 +29,7 @@ jobs:
 
     - name: Build binary
       run: |
-        cd /prettyfonts/v10
+        cd ./prettyfonts/v10
         pyinstaller --noconfirm --onefile --windowed --icon "bunnypad.png"  "main.py"
         ren ./dist/main.exe BunnyPadv10-unsigned.exe
     - name: Generate Timestamp
