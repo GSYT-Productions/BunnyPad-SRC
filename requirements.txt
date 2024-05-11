@@ -1,5 +1,0 @@
-PyQt5
-auto-py-to-exe
-fpdf
-distro
-gevent>=23.9.0 # not directly required, pinned by Snyk to avoid a vulnerability

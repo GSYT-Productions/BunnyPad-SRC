@@ -1,0 +1,5 @@
+PyQt5
+gevent>=23.9.0
+auto-py-to-exe
+fpdf
+distro
