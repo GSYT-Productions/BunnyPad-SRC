@@ -1,0 +1,70 @@
+/* Default Stylesheet for BunnyPad */
+
+﻿/* Set the background color of icons */
+QLabel[icon=true] {
+    background-color: #0078D7;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the background color of toolbars */
+QToolBar {
+    background-color: #0078D7;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the background color of the window */
+QMainWindow {
+    background-color: #8C49F0;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the color of the titlebar text */
+QMainWindow::title {
+    color: white;
+}
+
+/* Set the color of the titlebar background */
+QMainWindow::titleBar {
+    background-color: #8C49F0;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the background color of the status bar */
+QStatusBar {
+    color: white;
+    background-color: #0078D7;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the background color of menus */
+QMenuBar {
+    background-color: #8C49F0;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the text color of menus */
+QMenuBar::item {
+    color: white;
+}
+
+/* Set the background color of menu items */
+QMenu {
+    background-color: #6AA5F3;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the text color of menu items */
+QMenu::item {
+    color: white;
+}
+
+/* Set the background color of dialog windows */
+QMessageBox {
+    background-color: #8C49F0;
+    border-radius: 5px; /* Adjust the value as needed */
+}
+
+/* Set the text color of dialog windows */
+QMessageBox QLabel {
+    color: white;
+}
