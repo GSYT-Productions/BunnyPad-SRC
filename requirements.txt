@@ -1,4 +1,0 @@
-PyQt6
-auto-py-to-exe
-fpdf
-distro
