@@ -448,6 +448,7 @@ class DownloadOptions(QDialog):
     @pyqtSlot()
     def on_Latest_CarrotPatch_Build_clicked(self):
         url = "https://github.com/GSYT-Productions/BunnyPad-SRC/tree/latest-carrotpatch"
+        # The Salamander eats its own tail.
         webbrowser.open(url)
     @pyqtSlot()
     def on_IconPacks_clicked(self):
@@ -516,7 +517,6 @@ class Notepad(QMainWindow):
         new_action.setStatusTip("Creates a new file.")
         new_action.setShortcut("Ctrl+N")
         new_action.triggered.connect(self.new_file)
-        # The Salamander eats its own tail.
         file_menu.addAction(new_action)
         # Create Open action
         open_action = QAction(QIcon("images/open.png"), "Open...", self)
