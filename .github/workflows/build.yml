@@ -1,0 +1,60 @@
+name: Build and Release
+# will move to main branch but have it disabled until next version
+on:
+  push:
+    branches: [ latest-carrotpatch ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.12.3
+
+   # - name: Install Microsoft C++ Build Tools
+   #   run: |
+   #     choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel
+        pip install pyinstaller fpdf pyqt6 distro pillow psutil
+      # pyside6
+
+    - name: Build binary
+      run: |
+        cd ./prettyfonts/v10
+        pyinstaller --noconfirm --onefile --windowed --icon "bunnypad.png"  "main.py"
+        ren ./dist/main.exe BunnyPadv10-unsigned.exe
+    - name: Generate Timestamp
+      id: generate_timestamp
+      run: |
+          $timeStamp = Get-Date -Format "yyyyMMdd-HHmmss"
+          echo "::set-output name=timestamp::$timeStamp"
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: github-actions-${{ steps.generate_timestamp.outputs.timestamp }}
+        release_name: BunnyPad - v10 - Main Executable - ${{ steps.generate_timestamp.outputs.timestamp }} - win_amd64
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./prettyfonts/v10/dist/BunnyPadv10-unsigned.exe
+        asset_name: BunnyPadv10-unsigned.exe
+        asset_content_type: application/octet-stream
