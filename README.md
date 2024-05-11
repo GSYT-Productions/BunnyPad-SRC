@@ -1,4 +1,4 @@
-# BunnyPad
+# BunnyPad Stats
 BunnyPad: The Newest and Cutest Way to take notes!
 
 Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/downloads/GSYT-Productions/BunnyPad-SRC/total.svg)]()
@@ -6,7 +6,7 @@ Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/
 Itch.io Downloads: 220 [I have to change this manually]
 
 SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourceforge/dt/bunnypad)
-# BunnyPad
+# BunnyPad Contributors
 BunnyPad: The Newest and Cutest Way to take notes!
 ![bunnypad](https://github.com/GSYT-Productions/bunnypad/assets/92406354/ed685452-39aa-4537-b63b-e16131f3d1d6)
 
@@ -24,5 +24,5 @@ ByPad - Porting to Linux
 
 ItzAzan - Vulnerability Testing
 
-# Please note that the pre-release builds require the images from their respective folder
+### Please note that the pre-release builds require the images from their respective folder
 ![bunnypad](https://github.com/GSYT-Productions/bunnypad/assets/92406354/ed685452-39aa-4537-b63b-e16131f3d1d6)
