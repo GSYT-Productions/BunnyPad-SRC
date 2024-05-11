@@ -5,32 +5,27 @@ r"""
 | |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
-                         Mini Changelog: moved stylesheet to external file; rounded some corners, preparing for 22631
 """
-
 try:
-    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser
+    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess
     from PyQt6.QtCore import *
     from fpdf import FPDF
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
                                  QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
-                                 QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget)
+                                 QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout)
     from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
     from os import system as cmd
-    cmd("pip install PyQt6 distro fpdf")
+    cmd("pip install PyQt6 distro fpdf psutil")
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-
     # Split text into lines based on a specified width (e.g., 180)
     lines = textwrap.wrap(text, width=180)
-
     for line in lines:
         pdf.multi_cell(0, 10, txt=line)
-
     pdf.output(file_path)
 def identify_os():
     os_name = platform.system()
@@ -46,16 +41,74 @@ def identify_os():
         display_OS = f"macOS {mac_version} - Chip: {mac_platform}"
     elif os_name == "Windows":
         win_version = platform.release()
-        win_variant = platform.win32_edition()
-        win_variant = win_variant if win_variant else "(Wine Environment?)"
+        win_variant = platform.win32_edition() or "(Wine Environment?)"
         display_OS = f"Windows {win_version} {win_variant}"
     else:
         display_OS = "Unknown Operating System"
     return display_OS
-
+def get_cpu_model():
+    os_name = platform.system()
+    if os_name == "Windows":
+        try:
+            cpu_name = subprocess.check_output("wmic cpu get name", shell=True).decode().strip().split("\n")[1]
+            return f"CPU Model Name: {cpu_name}"
+        except subprocess.CalledProcessError:
+            return "CPU Model Name: Not available"
+    else:
+        try:
+            cpu_details = subprocess.check_output("lscpu", shell=True)
+            for line in cpu_details.decode().split('\n'):
+                if line.startswith("Model name:"):
+                    cpu_model = line.split(":")[1].strip()
+                    return f"CPU Model Name: {cpu_model}"
+            return "CPU Model Name: Not available"
+        except subprocess.CalledProcessError:
+            return "CPU Model Name: Not available"
+def get_system_info():
+    system_info = []
+    # RAM capacity
+    memory = psutil.virtual_memory()
+    ram = f"RAM Capacity: {memory.total / (1024**3):.2f} GB"
+    system_info.append(ram)
+    # Hard drive capacity (root directory)
+    total, _, _ = shutil.disk_usage("/")
+    diskspace = f"Hard Drive Capacity: {total / (1024**3):.2f} GB"
+    system_info.append(diskspace)
+    # CPU details
+    system_info.append(get_cpu_model())
+    # Screen resolution (not available on all platforms)
+    try:
+        screen_info = os.get_terminal_size()
+        resolution = f"Resolution: {screen_info.columns}x{screen_info.lines}"
+        system_info.append(resolution)
+    except OSError:
+        system_info.append("Resolution: Not available")
+    # GPU and VRAM (not available on all platforms)
+    os_name = platform.system()
+    if os_name != "Windows":
+        try:
+            gpu_info = subprocess.check_output("lshw -C display | grep product", shell=True)
+            gpu_name = gpu_info.decode().strip().split(":")[1]
+            system_info.append(f"GPU: {gpu_name}")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            system_info.append("GPU: Not available")
+    else:  # Windows
+        try:
+            gpu_info = subprocess.check_output("wmic path win32_videocontroller get caption,adapterram", shell=True)
+            gpu_info = gpu_info.decode().split("\n")[1].split(",")
+            if len(gpu_info) >= 2:
+                gpu_name = gpu_info[0].strip()
+                vram = int(gpu_info[1]) / (1024**3)
+                system_info.append(f"GPU: {gpu_name} (VRAM: {vram:.2f} GB)")
+            else:
+                system_info.append("GPU: Not available")
+        except (subprocess.CalledProcessError, IndexError):
+            system_info.append("GPU: Not available")
+    return '\n'.join(system_info)
+def show_current_directory():
+    return os.getcwd()
 class CharacterWidget(QWidget):
     characterSelected = pyqtSignal(str)
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.displayFont = QFont()
@@ -63,20 +116,17 @@ class CharacterWidget(QWidget):
         self.columns = 16
         self.lastKey = -1
         self.setMouseTracking(True)
-
     def updateFont(self, fontFamily):
         self.displayFont.setFamily(fontFamily)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
-
     def updateSize(self, fontSize):
         fontSize, _ = fontSize.toInt()
         self.displayFont.setPointSize(fontSize)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
-
     def updateStyle(self, fontStyle):
         fontDatabase = QFontDatabase()
         oldStrategy = self.displayFont.styleStrategy()
@@ -86,7 +136,6 @@ class CharacterWidget(QWidget):
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
-
     def updateFontMerging(self, enable):
         if enable:
             self.displayFont.setStyleStrategy(QFont.PreferDefault)
@@ -94,22 +143,18 @@ class CharacterWidget(QWidget):
             self.displayFont.setStyleStrategy(QFont.NoFontMerging)
         self.adjustSize()
         self.update()
-
     def setColumns(self, columns):
         self.columns = columns
         self.adjustSize()
         self.update()
-
     def sizeHint(self):
         return QSize(self.columns * self.squareSize, int((65536 / self.columns) * self.squareSize))
-
     def mouseMoveEvent(self, event):
         widgetPosition = self.mapFromGlobal(event.globalPosition().toPoint())
         key = (widgetPosition.y() // self.squareSize) * self.columns + widgetPosition.x() // self.squareSize
         text = '<p>Character: <span style="font-size: 24pt; font-family: %s">%s</span><p>Value: 0x%x' % (
             self.displayFont.family(), self._chr(key), key)
         QToolTip.showText(event.globalPosition().toPoint(), text, self)
-
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.lastKey = (event.pos().y() // self.squareSize) * self.columns + event.pos().x() // self.squareSize
@@ -119,7 +164,6 @@ class CharacterWidget(QWidget):
             self.update()
         else:
             super().mousePressEvent(event)
-
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(event.rect(), QColor("white"))
@@ -152,13 +196,10 @@ class CharacterWidget(QWidget):
                     key_ch) // 2,
                                  row * self.squareSize + 4 + fontMetrics.ascent(),
                                  key_ch)
-
     @staticmethod
     def _chr(codepoint):
         # Python v3.
         return chr(codepoint)
-
-
 class AboutDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(AboutDialog, self).__init__(*args, **kwargs)
@@ -200,8 +241,9 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22621.3 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts\n Channel: FreshlyPlanted"))
-        layout.addWidget(QLabel("You are running BunnyPad on " + display_text))
+        layout.addWidget(QLabel("Developer Information: \n Build: v10.0.22631.0 \n Internal Name: Codename PBbunnypower Notepad Variant Decipad \n Engine: PrettyFonts"))
+        layout.addWidget(QLabel("You are running BunnyPad on " + display_os))
+        layout.addWidget(QLabel("BunnyPad is installed at " + current_directory))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
         #Add click event for PBbunnypower easter egg
@@ -214,6 +256,26 @@ class AboutDialog(QDialog):
         msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
         msg_box.setText("BunnyPad is successful. We did it. People might try to destroy it, but we will not back down.")
         msg_box.exec()
+class SystemInfoDialog(QDialog):
+    def __init__(self, *args, **kwargs):
+        super(SystemInfoDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle("System Information")
+        self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        layout = QVBoxLayout(self)
+        title = QLabel("System Information")
+        font = title.font()
+        font.setPointSize(20)
+        title.setFont(font)
+        layout.addWidget(title)
+        logo = QLabel()
+        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
+        layout.addWidget(logo)
+        layout.addWidget(QLabel(systeminfo))
+        layout.addWidget(QLabel("Operating System: " + display_os))
+        layout.addWidget(QLabel("Installation Directory: " + current_directory))
+        for i in range(layout.count()):
+            layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        
 class CreditsDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(CreditsDialog, self).__init__(*args, **kwargs)
@@ -232,18 +294,9 @@ class CreditsDialog(QDialog):
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
         # Add click event for escargot easter egg
-        logo.mousePressEvent = self.activate_escargot_easter_egg
-    def activate_escargot_easter_egg(self, event):
-        # galaxynote7 easter egg code
-        msg_box = QMessageBox()
-        layout = QVBoxLayout(self)
-        msg_box.setWindowTitle("Snails")
-        msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-        logo = QLabel()
-        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
-        layout.addWidget(logo)
-        msg_box.setText("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
-        msg_box.exec()
+        logo.mousePressEvent = self.alan_egg
+    def alan_egg(self, event):
+        AlanWalkerWIA().exec()
 class FeatureNotReady(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -265,7 +318,6 @@ class FeatureNotReady(QDialog):
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         # Add click event for song quote easter egg
         logo.mousePressEvent = self.activate_see_you_again_easter_egg
-
     def activate_see_you_again_easter_egg(self, event):
         song = ("It's been a long day without you, my friend, \n"
                 "And I'll tell you all about it when I see you again. \n"
@@ -347,73 +399,97 @@ class DownloadOptions(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Download Options")
         self.setWindowIcon(QIcon(QPixmap('./bunnypad.png')))
-        
         main_layout = QVBoxLayout(self)
-        
         # Text label
         text_label = QLabel("Where do you want to go today?\n\nChoose one of the available download options:")
         main_layout.addWidget(text_label)
-        
-        # Buttons layout
-        buttons_layout = QHBoxLayout()
+        # Buttons layout (2x2 grid)
+        buttons_layout = QGridLayout()
         main_layout.addLayout(buttons_layout)
-        
         # Map of shortened forms to full names
         button_names = {
-            "Latest Stable Source": "Latest Stable Source",
             "Latest Stable Release": "Latest Stable Release",
+            "Latest Stable Source": "Latest Stable Source",
             "Latest CarrotPatch Build": "Latest CarrotPatch Build",
             "IconPacks": "IconPacks",
-            "Stylesheets": "Stylesheets"
+            "Stylesheets": "Stylesheets",
+            "Rick Roll": "Rick Roll"
         }
-        
-        # Create buttons
+        # Create buttons and add them to the grid
+        row, col = 0, 0
         for full_name, object_name in button_names.items():
             button = QPushButton(full_name)
             button.setObjectName(object_name)
-            button.clicked.connect(getattr(self, f"on_{object_name.replace(' ', '_')}_clicked"))
-            buttons_layout.addWidget(button)
-        
+            button.clicked.connect(getattr(self, f"on_{object_name.replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '')}_clicked"))
+            buttons_layout.addWidget(button, row, col)
+            col += 1
+            if col > 1:
+                col = 0
+                row += 1
         # LCD number widget
         self.lcd_number = QLCDNumber()
         self.lcd_number.setObjectName("EasterEgg_DownloadOptions")
         self.lcd_number.setSegmentStyle(QLCDNumber.SegmentStyle.Flat)
         self.lcd_number.setDigitCount(5)
-        self.lcd_number.display(69)
+        self.lcd_number.display(42069)
         main_layout.addWidget(self.lcd_number)
-
         # Close button
         close_button = QPushButton("Close")
         close_button.clicked.connect(self.reject)
         main_layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
-        
-
     @pyqtSlot()
     def on_Latest_Stable_Release_clicked(self):
         url = "https://garrystraityt.itch.io/bunnypad"
         webbrowser.open(url)
-
     @pyqtSlot()
     def on_Latest_Stable_Source_clicked(self):
-        url = "https://github.com/GSYT-Productions/BunnyPad-SRC/"
-        webbrowser.open(url)
-
+         url = "https://github.com/GSYT-Productions/BunnyPad-SRC/"
+         webbrowser.open(url)
     @pyqtSlot()
     def on_Latest_CarrotPatch_Build_clicked(self):
         url = "https://github.com/GSYT-Productions/BunnyPad-SRC/tree/latest-carrotpatch"
         webbrowser.open(url)
-
     @pyqtSlot()
     def on_IconPacks_clicked(self):
         url = "https://gsyt-productions.github.io/BunnyPadCustomizer/IconPacks"
         webbrowser.open(url)
-
     @pyqtSlot()
     def on_Stylesheets_clicked(self):
         url = "https://gsyt-productions.github.io/BunnyPadCustomizer/stylesheets"
         webbrowser.open(url)
-
-        
+    @pyqtSlot()
+    def on_Rick_Roll_clicked(self):
+        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        webbrowser.open(url)
+class AlanWalkerWIAEgg(QDialog):
+    def __init__(self, *args, **kwargs):
+        super(AlanWalkerWIAEgg, self).__init__(*args, **kwargs)
+        self.setWindowTitle("BunnyPad")
+        self.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        layout = QVBoxLayout(self)
+        title = QLabel("BunnyPad™")
+        font = title.font()
+        font.setPointSize(20)
+        title.setFont(font)
+        layout.addWidget(title)
+        logo = QLabel()
+        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
+        layout.addWidget(logo)
+        layout.addWidget(QLabel("\"I'm not playing by the rules if they were made by you\""))
+        for i in range(layout.count()):
+            layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        # Add click event for escargot easter egg
+        logo.mousePressEvent = self.activate_escargot_easter_egg
+    def activate_escargot_easter_egg(self, event):
+        msg_box = QMessageBox()
+        layout = QVBoxLayout(self)
+        msg_box.setWindowTitle("Snails")
+        msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        logo = QLabel()
+        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
+        layout.addWidget(logo)
+        msg_box.setText("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+        msg_box.exec()
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -589,6 +665,11 @@ class Notepad(QMainWindow):
         about_action.setShortcut("Alt+H")
         about_action.triggered.connect(self.about)
         help_menu.addAction(about_action)
+        system_action = QAction(QIcon(os.path.join('images/info.png')), "About Your System", self)
+        system_action.setStatusTip("Find out more about BunnyPad's operating environment")  # Hungry!
+        system_action.setShortcut("Shift+F1")
+        system_action.triggered.connect(self.sysinfo)
+        help_menu.addAction(system_action)
         credits_action = QAction(QIcon(os.path.join('images/team.png')), "Credits for BunnyPad", self)
         credits_action.setStatusTip("Find out more about BunnyPad's Team")  # Hungry!
         credits_action.setShortcut("Alt+C")
@@ -605,11 +686,11 @@ class Notepad(QMainWindow):
         contact_support_action.triggered.connect(self.support)
         help_menu.addAction(contact_support_action)
         # For v11: Source Code Download
-        download_action = QAction(QIcon("./bpdl.png"), "Download BunnyPad Tools", self)
+        download_action = QAction(QIcon("images/share.png"), "Download BunnyPad Tools", self)
         download_action.setStatusTip("For BunnyPad Users to Customize their BunnyPad")
         download_action.setShortcut("Ctrl+J")
-        # download_action.triggered.connect(self.download)
-        download_action.triggered.connect(self.FeatureNotReady)
+        download_action.triggered.connect(self.download)
+        # download_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(download_action)
         # Create the statusbar action
         statusbar_action = QAction("Show statusbar", self, checkable=True)
@@ -687,7 +768,6 @@ class Notepad(QMainWindow):
         self.setGeometry(300, 300, 800, 600)
         self.setWindowTitle("Untitled - BunnyPad")
         self.show()
-
     def new_file(self):
         """Create a new file."""
         def clearTEW(): # clear TextEditWidget
@@ -724,7 +804,6 @@ class Notepad(QMainWindow):
         else:
             self.warn_unsaved_changes()
             file_open()
-
     def save_file(self):
         """Save the file."""
         if not self.file_path:
@@ -750,17 +829,14 @@ class Notepad(QMainWindow):
                event.accept()
        else:
           event.ignore()
-
     def handle_text_changed(self):
         self.unsaved_changes_flag = True
         if self.open_file_ran == True or self.save_file_ran == True:
             self.setWindowTitle(f"*{os.path.basename(self.file_path)} - BunnyPad")
         else:
             self.setWindowTitle("*Untitled - BunnyPad")
-
     def check_saved_changes(self):
         return not self.unsaved_changes_flag
-
     def save_file_as(self):
         # options = QFileDialog.Option.DontUseNativeDialog
         file_path, selected_filter = QFileDialog.getSaveFileName(self, "Save As", "", "Text Files (*.txt);;Log Files (*.log);; Info files (*.nfo);; Batch files (*.bat);; Windows Command Script files (*.cmd);; VirtualBasicScript files (*.vbs);; JSON files (*.json);; All Files (*.*)") #, options=options)
@@ -774,7 +850,6 @@ class Notepad(QMainWindow):
                     file_path += file_extension
             self.file_path = file_path
             self.save_file()
-
     def warn_unsaved_changes(self):
         ret = QMessageBox.warning(self, "BunnyPad", "The document has been modified. Would you like to save your changes?", QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
         if ret == QMessageBox.StandardButton.Save:
@@ -805,26 +880,22 @@ class Notepad(QMainWindow):
         self.statusbar.setVisible(not self.statusbar.isVisible())
     def about(self):
         AboutDialog().exec()
-
     def credits(self):
         CreditsDialog().exec()
-
+    def sysinfo(self):
+        SystemInfoDialog().exec()
     def FeatureNotReady(self):
         FeatureNotReady().exec()
-
     def cake(self):
         TheCakeIsALie().exec()
-
     def support(self):
         ContactUs().exec()
     def download(self):
         DownloadOptions().exec()
     def toggle_character_map(self, checked):
         character_dock.setVisible(checked)
-
     def insert_character(self, character):
         self.textedit.insertPlainText(character)
-
     def print_to_pdf(self):
         file_path, selected_filter = QFileDialog.getSaveFileName(self, "Print to PDF [Save as]", "", "PDF File (*.pdf)")
         if file_path:
@@ -837,7 +908,6 @@ class Notepad(QMainWindow):
                     file_path += file_extension
             text = self.textedit.toPlainText()
             save_as_pdf(text, file_path)
-
     def dateTime(self):
         cdate = str(datetime.datetime.now())
         self.textedit.append(cdate)
@@ -850,15 +920,12 @@ class Notepad(QMainWindow):
         self.textedit.setTextCursor(cursor)
         # Ensure the target line is visible
         self.textedit.ensureCursorVisible()
-
     def find_function(self):
         def find_word(word):
             cursor = self.textEdit.document().find(word)
-
             if not cursor.isNull():
                 self.textEdit.setTextCursor(cursor)
                 self.textEdit.ensureCursorVisible()
-
         word_to_find, ok = QInputDialog.getText(
             self,
             "Find Word",
@@ -866,7 +933,6 @@ class Notepad(QMainWindow):
         )
         if ok and word_to_find:
             find_word(word_to_find)
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName("BunnyPad")
@@ -889,6 +955,8 @@ if __name__ == '__main__':
     character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
     character_dock.hide()  # Initially hide the widget
     BunnyPad.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, character_dock)
-    display_text = identify_os()
+    display_os = identify_os()
+    current_directory = show_current_directory()
+    systeminfo = get_system_info()
     BunnyPad.show()
     sys.exit(app.exec())
