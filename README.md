@@ -16,6 +16,8 @@ PBbunnypower - The Star of the Show, she created the icon of the app, and the pr
 
 BunnyFndr - Main Co-developer
 
+GarryStraitYT - Main Developer
+
 ZeRoTeCh00 - Promoted BunnyPad during stream
 
 UnityAI - Helped with bugchecking the program
