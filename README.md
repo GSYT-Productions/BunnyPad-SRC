@@ -20,11 +20,13 @@ GarryStraitYT - Main Developer
 
 ZeRoTeCh00 - Promoted BunnyPad during stream
 
-UnityAI - Helped with bugchecking the program
+UnityAI - Helped with bug checking the program
 
 ByPad - Porting to Linux
 
 ItzAzan - Vulnerability Testing
+
+Wolfieboy09 - Contributor, Bug Hunter
 
 ### Please note that the pre-release builds require the images from their respective folder
 ![bunnypad](https://github.com/GSYT-Productions/bunnypad/assets/92406354/ed685452-39aa-4537-b63b-e16131f3d1d6)
