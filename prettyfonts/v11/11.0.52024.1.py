@@ -16,7 +16,7 @@ try:
                                  QPushButton, QFontDialog,
                                  QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget,
                                  QGridLayout)
-    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor, QFontDatabase)
+    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
     from os import system as cmd
@@ -106,8 +106,7 @@ def get_system_info():
             system_info.append("GPU: Not available")
     else:  # Windows
         try:
-            gpu_info = subprocess.check_output("wmic path win32_videocontroller get caption,adapterram",
-                                               shell=True)  # noqa
+            gpu_info = subprocess.check_output("wmic path win32_videocontroller get caption,adapterram", shell=True)
             gpu_info = gpu_info.decode().split("\n")[1].split(",")
             if len(gpu_info) >= 2:
                 gpu_name = gpu_info[0].strip()
@@ -135,24 +134,24 @@ class CharacterWidget(QWidget):
         self.lastKey = -1
         self.setMouseTracking(True)
 
-    def updateFont(self, font_family):
-        self.displayFont.setFamily(font_family)
+    def updateFont(self, fontFamily):
+        self.displayFont.setFamily(fontFamily)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
 
-    def updateSize(self, font_size):
-        font_size, _ = font_size.toInt()
-        self.displayFont.setPointSize(font_size)
+    def updateSize(self, fontSize):
+        fontSize, _ = fontSize.toInt()
+        self.displayFont.setPointSize(fontSize)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
         self.update()
 
-    def updateStyle(self, font_style):
+    def updateStyle(self, fontStyle):
         fontDatabase = QFontDatabase()
         oldStrategy = self.displayFont.styleStrategy()
         self.displayFont = fontDatabase.font(self.displayFont.family(),
-                                             font_style, self.displayFont.pointSize())
+                                             fontStyle, self.displayFont.pointSize())
         self.displayFont.setStyleStrategy(oldStrategy)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
@@ -230,15 +229,6 @@ class CharacterWidget(QWidget):
         return chr(codepoint)
 
 
-def activate_PBbunnypower_easter_egg(event):
-    # PBbunnypower easter egg code
-    msg_box = QMessageBox()
-    msg_box.setWindowTitle("Message to PBbunnypower")
-    msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-    msg_box.setText("BunnyPad is successful. We did it. People might try to destroy it, but we will not back down.")
-    msg_box.exec()
-
-
 class AboutDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(AboutDialog, self).__init__(*args, **kwargs)
@@ -273,32 +263,33 @@ class AboutDialog(QDialog):
         ]
         selected_anagram = random.choice(anagrams)
         phrases = ["\"It was a pleasure to [learn]\"",
-                   "\"So it was the hand that started it all ... \nHis hands had been infected, and soon it would be "
-                   "his arms ... \nHis hands were ravenous.\"",
+                   "\"So it was the hand that started it all ... \nHis hands had been infected, and soon it would be his arms ... \nHis hands were ravenous.\"",
                    "Hopping past opinions",
                    "\"Is it true that a long time ago, firemen used to put out fires and not burn books?\"",
                    "\"Fahrenheit 451, the temperature at which paper spontaneously combusts\"",
-                   "``Do you want to know what's inside all these books? Insanity. The Eels want to measure their "
-                   "place in the universe,\n so they turn to these novels about non-existent people. Or worse, "
-                   "philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We "
-                   "have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, "
-                   "and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want "
-                   "a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. "
-                   "Better yet, none.``",
+                   "``Do you want to know what's inside all these books? Insanity. The Eels want to measure their place in the universe,\n so they turn to these novels about non-existent people. Or worse, philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. Better yet, none.``",
                    "\"what a thing human is, one have a no loyalty and second have hope of it lmao\" - ItzAzan",
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
         layout.addWidget(QLabel(
-            "Developer Information: \n Build: v11.0.22631.0 \n Internal Name: Codename PBbunnypower Notepad Variant "
-            "Decipad \n Engine: PrettyFonts"))
+            "Developer Information: \n Build: v11.0.52024.1 \n Internal Name: Codename PBbunnypower Notepad Variant Bun Valley \n Engine: PrettyFonts"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_os))
         layout.addWidget(QLabel("BunnyPad is installed at " + current_directory))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        # Add click event for PBbunnypower Easter egg
-        logo.mousePressEvent = activate_PBbunnypower_easter_egg
-        # logo.mousePressEvent = oops_egg().exec()
+        #Add click event for PBbunnypower easter egg
+        logo.mousePressEvent = self.activate_PBbunnypower_easter_egg
+        #logo.mousePressEvent = oops_egg().exec()
+
+    @staticmethod
+    def activate_PBbunnypower_easter_egg(event):
+        # PBbunnypower easter egg code
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("Message to PBbunnypower")
+        msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        msg_box.setText("BunnyPad is successful. We did it. People might try to destroy it, but we will not back down.")
+        msg_box.exec()
 
 
 class SystemInfoDialog(QDialog):
@@ -322,10 +313,6 @@ class SystemInfoDialog(QDialog):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
 
-def alan_egg(event):
-    AlanWalkerWIAEgg().exec()
-
-
 class CreditsDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(CreditsDialog, self).__init__(*args, **kwargs)
@@ -341,28 +328,15 @@ class CreditsDialog(QDialog):
         logo.setPixmap(QPixmap(os.path.join('./gsyt.png')))
         layout.addWidget(logo)
         layout.addWidget(QLabel(
-            "GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her "
-            "\n\nI-San: Beta Tester\n Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get "
-            "it off the ground and known by a few people, owner of DevSanc \n ZeRoTeCh00: said kind words about "
-            "BunnyPad during his stream on 2 September 2023 \n ByPad: Porting the app to Linux, clean-room reverse "
-            "engineering the app \n DinoDude: Github contributor \n BunnyFndr: Icon Finder and Bug Tester"))
+            'GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, tester, project dedicated to her \n\nI-San: Beta Tester\n Tai: Assisted with CarrotPatch Icon \n FireCube (FireCubeStudios): Helped get it off the ground and known by a few people, owner of DevSanc \n ZeRoTeCh00: said kind words about BunnyPad during his stream on 2 September 2023 \n ByPad: Porting the app to Linux, clean-room reverse engineering the app \n DinoDude: Github contributor \n BunnyFndr: Icon Finder and Bug Tester, Official Co-Dev \n Wolfieboy09: Github Contributor'))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        # Add click event for escargot Easter egg
-        logo.mousePressEvent = alan_egg
+        # Add click event for escargot easter egg
+        logo.mousePressEvent = self.alan_egg
 
-
-def activate_see_you_again_easter_egg(event):
-    song = ("It's been a long day without you, my friend, \n"
-            "And I'll tell you all about it when I see you again. \n"
-            "We've come a long way from where we began, \n"
-            "And I'll tell you all about it when I see you again, \n"
-            "When I see you again.")
-    msg_box = QMessageBox()
-    msg_box.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
-    msg_box.setWindowTitle("See You Again")
-    msg_box.setText(song)
-    msg_box.exec()
+    @staticmethod
+    def alan_egg(event):
+        AlanWalkerWIAEgg().exec()
 
 
 class FeatureNotReady(QDialog):
@@ -378,26 +352,28 @@ class FeatureNotReady(QDialog):
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('bunnypad.png')))
         message = QLabel(
-            "The requested feature caused instabilities during testing and has been disabled until further notice. We "
-            "apologize for the inconvenience.")
+            "The requested feature caused instabilities during testing and has been disabled until further notice. We apologize for the inconvenience.")
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept)
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(message, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        # Add click event for song quote Easter egg
-        logo.mousePressEvent = activate_see_you_again_easter_egg
+        # Add click event for song quote easter egg
+        logo.mousePressEvent = self.activate_see_you_again_easter_egg
 
-
-def momentum_easteregg(event):
-    quote = ("Momentum, a function of mass and velocity, is conserved between portals. In layman's terms, "
-             "speedy thing goes in, speedy thing comes out.")
-    msg_box = QMessageBox()
-    msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-    msg_box.setWindowTitle("Momentum and Portals")
-    msg_box.setText(quote)
-    msg_box.exec()
+    @staticmethod
+    def activate_see_you_again_easter_egg(event):
+        song = ("It's been a long day without you, my friend, \n"
+                "And I'll tell you all about it when I see you again. \n"
+                "We've come a long way from where we began, \n"
+                "And I'll tell you all about it when I see you again, \n"
+                "When I see you again.")
+        msg_box = QMessageBox()
+        msg_box.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
+        msg_box.setWindowTitle("See You Again")
+        msg_box.setText(song)
+        msg_box.exec()
 
 
 class TheCakeIsALie(QDialog):
@@ -413,8 +389,7 @@ class TheCakeIsALie(QDialog):
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('./images/nocake.png')))
         message = QLabel(
-            "Unfortunately, there is no cake. You have fallen for a trap. Where we promised a tasty dessert, "
-            "there is instead deception. In other words, THE CAKE IS A LIE!")
+            "Unfortunately, there is no cake. You have fallen for a trap. Where we promised a tasty dessert, there is instead deception. In other words, THE CAKE IS A LIE!")
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept)
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -422,7 +397,16 @@ class TheCakeIsALie(QDialog):
         layout.addWidget(message, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         # Add click event for the other easter egg
-        logo.mousePressEvent = momentum_easteregg
+        logo.mousePressEvent = self.momentum_easteregg
+
+    @staticmethod
+    def momentum_easteregg(event):
+        quote = "Momentum, a function of mass and velocity, is conserved between portals. In layman's terms, speedy thing goes in, speedy thing comes out."
+        msg_box = QMessageBox()
+        msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
+        msg_box.setWindowTitle("Momentum and Portals")
+        msg_box.setText(quote)
+        msg_box.exec()
 
 
 class ContactUs(QDialog):
@@ -440,15 +424,12 @@ class ContactUs(QDialog):
         logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
         layout.addWidget(logo)
         info_label = QLabel(
-            "Website: <a href='https://gsyt-productions.github.io/'>https://gsyt-productions.github.io/</a> <br> GSYT "
-            "Productions Server: <a href='https://guilded.gg/gsyt-productions'>https://guilded.gg/gsyt-productions</a"
-            "> <br> BunnyPad CarrotPatch Server: <a "
-            "href='https://guilded.gg/bunnypad'>https://guilded.gg/bunnypad</a> <br> Text Us: +1 (814) 204-2333")
+            "Website: <a href='https://gsyt-productions.github.io/'>https://gsyt-productions.github.io/</a> <br> GSYT Productions Server: <a href='https://guilded.gg/gsyt-productions'>https://guilded.gg/gsyt-productions</a> <br> BunnyPad CarrotPatch Server: <a href='https://guilded.gg/bunnypad'>https://guilded.gg/bunnypad</a> <br> Text Us: +1 (814) 204-2333")
         info_label.setTextFormat(Qt.TextFormat.RichText)
         info_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         info_label.setOpenExternalLinks(True)
         layout.addWidget(info_label)
-        logo.mousePressEvent = self.activate_galaxy_note7_easter_egg
+        logo.mousePressEvent = self.activate_galaxynote7_easter_egg
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept)
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -456,8 +437,8 @@ class ContactUs(QDialog):
         layout.addWidget(info_label, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-    def activate_galaxy_note7_easter_egg(self, event):
-        # galaxy_note7 easter egg code
+    def activate_galaxynote7_easter_egg(self, event):
+        # galaxynote7 easter egg code
         msg_box = QMessageBox()
         layout = QVBoxLayout(self)
         msg_box.setWindowTitle("Galaxy Note 7")
@@ -563,7 +544,7 @@ class AlanWalkerWIAEgg(QDialog):
         layout.addWidget(QLabel("\"I'm not playing by the rules if they were made by you\""))
         for i in range(layout.count()):
             layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        # Add click event for escargot Easter egg
+        # Add click event for escargot easter egg
         logo.mousePressEvent = self.activate_escargot_easter_egg
 
     def activate_escargot_easter_egg(self, event):
@@ -575,50 +556,13 @@ class AlanWalkerWIAEgg(QDialog):
         logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
         layout.addWidget(logo)
         msg_box.setText(
-            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
         msg_box.exec()
-
-
-def about():
-    AboutDialog().exec()
-
-
-def credits():
-    CreditsDialog().exec()
-
-
-def sysinfo():
-    SystemInfoDialog().exec()
-
-
-def FeatureNotReady():
-    FeatureNotReady().exec()
-
-
-def cake():
-    TheCakeIsALie().exec()
-
-
-def download():
-    DownloadOptions().exec()
-
-
-def support():
-    ContactUs().exec()
-
-
-def toggle_character_map(checked):
-    character_dock.setVisible(checked)
 
 
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.textEdit = None
         self.setWindowTitle("Untitled - BunnyPad")
         self.setWindowIcon(QIcon(os.path.join('bunnypad.png')))
         self.setGeometry(100, 100, 800, 600)
@@ -734,7 +678,7 @@ class Notepad(QMainWindow):
         toggle_character_map_action.setChecked(False)
         toggle_character_map_action.setStatusTip("Toggle Character Map")
         toggle_character_map_action.setShortcut("Ctrl+M")
-        toggle_character_map_action.toggled.connect(toggle_character_map)
+        toggle_character_map_action.toggled.connect(self.toggle_character_map)
         edit_menu.addAction(toggle_character_map_action)
         edit_menu.addSeparator()
         # Create Find action
@@ -754,7 +698,7 @@ class Notepad(QMainWindow):
         replace_action = QAction(QIcon("images/replace.png"), "Replace...", self)
         replace_action.setStatusTip("Currently in development...")
         replace_action.setShortcut("Ctrl+H")
-        replace_action.triggered.connect(FeatureNotReady)
+        replace_action.triggered.connect(self.FeatureNotReady)
         edit_menu.addAction(replace_action)
         # Add separator
         edit_menu.addSeparator()
@@ -788,33 +732,33 @@ class Notepad(QMainWindow):
         about_action = QAction(QIcon(os.path.join('images/info.png')), "About BunnyPad", self)
         about_action.setStatusTip("Find out more about BunnyPad")  # Hungry!
         about_action.setShortcut("Alt+H")
-        about_action.triggered.connect(about)
+        about_action.triggered.connect(self.about)
         help_menu.addAction(about_action)
         system_action = QAction(QIcon(os.path.join('images/info.png')), "About Your System", self)
         system_action.setStatusTip("Find out more about BunnyPad's operating environment")  # Hungry!
         system_action.setShortcut("Shift+F1")
-        system_action.triggered.connect(sysinfo)
+        system_action.triggered.connect(self.sysinfo)
         help_menu.addAction(system_action)
         credits_action = QAction(QIcon(os.path.join('images/team.png')), "Credits for BunnyPad", self)
         credits_action.setStatusTip("Find out more about BunnyPad's Team")  # Hungry!
         credits_action.setShortcut("Alt+C")
-        credits_action.triggered.connect(credits)
+        credits_action.triggered.connect(self.credits)
         help_menu.addAction(credits_action)
         cake_action = QAction(QIcon(os.path.join('images/cake.png')), "Cake :D", self)
         cake_action.setStatusTip("Click here for some Cake")  # Hungry!
         cake_action.setShortcut("Alt+A")
-        cake_action.triggered.connect(cake)
+        cake_action.triggered.connect(self.cake)
         help_menu.addAction(cake_action)
         contact_support_action = QAction(QIcon(os.path.join('images/support.png')), "Contact Us", self)
         contact_support_action.setStatusTip("Find out how to contact the team!")  # Hungry!
         contact_support_action.setShortcut("Alt+S")
-        contact_support_action.triggered.connect(support)
+        contact_support_action.triggered.connect(self.support)
         help_menu.addAction(contact_support_action)
         # For v11: Source Code Download
         download_action = QAction(QIcon("images/share.png"), "Download BunnyPad Tools", self)
         download_action.setStatusTip("For BunnyPad Users to Customize their BunnyPad")
         download_action.setShortcut("Ctrl+J")
-        download_action.triggered.connect(download)
+        download_action.triggered.connect(self.download)
         # download_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(download_action)
         # Create the statusbar action
@@ -877,7 +821,7 @@ class Notepad(QMainWindow):
                                                            checkable=True)
         self.toggle_character_map_toolbar_action.setShortcut("Ctrl+M")
         self.toggle_character_map_toolbar_action.setStatusTip("Toggle Character Map")
-        self.toggle_character_map_toolbar_action.toggled.connect(toggle_character_map)
+        self.toggle_character_map_toolbar_action.toggled.connect(self.toggle_character_map)
         self.toolbar.addAction(self.toggle_character_map_toolbar_action)
         self.toolbar.addSeparator()
         # Create Status Bar
@@ -915,23 +859,19 @@ class Notepad(QMainWindow):
 
     def open_file(self):
         def file_open():
-            file_types = ("Text Files (*.txt);;Log Files (*.log);;Info files (*.nfo);;Batch files (*.bat);;Windows "
-                          "Command Script files (*.cmd);;VirtualBasicScript files (*.vbs);;JSON files ("
-                          "*.json);;Python Source files (*.py);;All Supported File Types (*.txt *.log *.nfo *.bat "
-                          "*.cmd *.vbs *.json *.py);;All Files (*.*)")
+            file_types = "Text Files (*.txt);;Log Files (*.log);;Info files (*.nfo);;Batch files (*.bat);;Windows Command Script files (*.cmd);;VirtualBasicScript files (*.vbs);;JSON files (*.json);;Python Source files (*.py);;All Supported File Types (*.txt *.log *.nfo *.bat *.cmd *.vbs *.json *.py);;All Files (*.*)"
             file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", file_types)
             if file_path:
                 try:
-                    with open(file_path, 'r') as document:
-                        text = document.read()
+                    with open(file_path, 'r') as file_to_read:
+                        text = file_to_read.read()
                         self.textedit.setText(text)
                         self.file_path = file_path
                         self.setWindowTitle(f"{os.path.basename(file_path)} - BunnyPad")
                         self.open_file_ran = True
                     if file_path.endswith(('.json', '.py')):
                         QMessageBox.warning(self, "Warning",
-                                            "Auto-indentation and syntax highlighting are currently unavailable for "
-                                            "JSON and Python files.")
+                                            "Auto-indentation and syntax highlighting are currently unavailable for JSON and Python files.")
                 except UnicodeDecodeError:
                     QMessageBox.critical(self, "Error", "Unicode Error: Cannot open file")
 
@@ -961,7 +901,7 @@ class Notepad(QMainWindow):
                                      QMessageBox.StandardButton.Cancel)
         if reply == QMessageBox.StandardButton.Ok:
             if not self.unsaved_changes_flag:
-                event.accept
+                pass
             else:
                 self.warn_unsaved_changes()
                 event.accept()
@@ -970,7 +910,7 @@ class Notepad(QMainWindow):
 
     def handle_text_changed(self):
         self.unsaved_changes_flag = True
-        if self.open_file_ran is True or self.save_file_ran is True:
+        if self.open_file_ran == True or self.save_file_ran == True:
             self.setWindowTitle(f"*{os.path.basename(self.file_path)} - BunnyPad")
         else:
             self.setWindowTitle("*Untitled - BunnyPad")
@@ -979,13 +919,8 @@ class Notepad(QMainWindow):
         return not self.unsaved_changes_flag
 
     def save_file_as(self):
-        # options = QFileDialog.Option.DontUseNativeDialog
         file_path, selected_filter = QFileDialog.getSaveFileName(self, "Save As", "",
-                                                                 "Text Files (*.txt);;Log Files (*.log);; Info files "
-                                                                 "(*.nfo);; Batch files (*.bat);; Windows Command "
-                                                                 "Script files (*.cmd);; VirtualBasicScript files ("
-                                                                 "*.vbs);; JSON files (*.json);; All Files (*.*)")
-        #, options=options)
+                                                                 "Text Files (*.txt);;Log Files (*.log);; Info files (*.nfo);; Batch files (*.bat);; Windows Command Script files (*.cmd);; VirtualBasicScript files (*.vbs);; JSON files (*.json);; All Files (*.*)")
         if file_path:
             # Extract file extension from the selected filter using regular expressions
             file_extension_match = re.search(r'\(\*\.(\w+)\)', selected_filter)
@@ -1034,6 +969,38 @@ class Notepad(QMainWindow):
     def toggle_statusbar(self):
         self.statusbar.setVisible(not self.statusbar.isVisible())
 
+    @staticmethod
+    def about():
+        AboutDialog().exec()
+
+    @staticmethod
+    def credits():
+        CreditsDialog().exec()
+
+    @staticmethod
+    def sysinfo():
+        SystemInfoDialog().exec()
+
+    @staticmethod
+    def FeatureNotReady():
+        FeatureNotReady().exec()
+
+    @staticmethod
+    def cake():
+        TheCakeIsALie().exec()
+
+    @staticmethod
+    def support():
+        ContactUs().exec()
+
+    @staticmethod
+    def download():
+        DownloadOptions().exec()
+
+    @staticmethod
+    def toggle_character_map(checked):
+        character_dock.setVisible(checked)
+
     def insert_character(self, character):
         self.textedit.insertPlainText(character)
 
@@ -1051,8 +1018,8 @@ class Notepad(QMainWindow):
             save_as_pdf(text, file_path)
 
     def dateTime(self):
-        curr_date = str(datetime.datetime.now())
-        self.textedit.append(curr_date)
+        cdate = str(datetime.datetime.now())
+        self.textedit.append(cdate)
 
     def go_to_line(self):
         line_number, ok = QInputDialog.getInt(self, "Go to Line", "Enter line number:", value=1)
