@@ -30,4 +30,4 @@ Wolfieboy09 - Contributor, Bug Hunter
 ![Stars](https://api.star-history.com/svg?repos=GSYT-Productions/BunnyPad-SRC&type=Date)
 
 [![CodeQL](https://github.com/GSYT-Productions/BunnyPad-SRC/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/GSYT-Productions/BunnyPad-SRC/actions/workflows/github-code-scanning/codeql)
-
+[![pages-build-deployment](https://github.com/GSYT-Productions/BunnyPad-SRC/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/GSYT-Productions/BunnyPad-SRC/actions/workflows/pages/pages-build-deployment)
