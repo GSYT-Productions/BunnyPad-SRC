@@ -3,7 +3,7 @@ BunnyPad: The Newest and Cutest Way to take notes!
 
 Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/downloads/GSYT-Productions/BunnyPad-SRC/total.svg)]()
 
-Itch.io Downloads: 221 [I have to change this manually]
+Itch.io Downloads: 241 [I have to change this manually]
 
 SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourceforge/dt/bunnypad)
 # BunnyPad Contributors
