@@ -22,7 +22,7 @@ UnityAI - Helped with bug checking the program
 
 ByPad - Porting to Linux
 
-ItzAzan - Vulnerability Testing
+5g and K4sum1 - Helping with ideas
 
 Wolfieboy09 - Contributor, Bug Hunter
 
