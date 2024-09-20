@@ -1,0 +1,4 @@
+1) Fix currently existing boxes
+2) Implement an autosave feature that makes a temporary copy of the currently open document every 15 seconds. This file would be in "%APPDATA%\GSYT Productions\BunnyPad" on Windows and deleted when the user saves the file.
+3) Implement an optional "URL" bar used to locate the current document
+4) Get ready for Linux porting.
