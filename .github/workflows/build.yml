@@ -14,7 +14,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.12.3
+        python-version: 3.12.6
 
    # - name: Install Microsoft C++ Build Tools
    #   run: |
@@ -31,7 +31,7 @@ jobs:
       run: |
         cd ./prettyfonts/v11
         pyinstaller --noconfirm --onefile --windowed --icon "bunnypad.png"  "main.py"
-        ren ./dist/main.exe BunnyPadv11.0.202409.0.exe
+        ren ./dist/main.exe BunnyPadv11.0.202409.1-Experimental.exe
     - name: Generate Timestamp
       id: generate_timestamp
       run: |
@@ -55,6 +55,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./prettyfonts/v11/dist/BunnyPadv11.0.202409.0.exe
+        asset_path: ./prettyfonts/v11/dist/BunnyPadv11.0.202409.1-Experimental.exe
         asset_name: BunnyPadv11.0.202409.0.exe
         asset_content_type: application/octet-stream
