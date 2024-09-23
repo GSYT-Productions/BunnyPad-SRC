@@ -17,7 +17,7 @@ try:
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
     from os import system as cmd
-    cmd("pip install PyQt6 distro fpdf psutil")
+    cmd(r".\python.exe -m pip install PyQt6 distro fpdf psutil setuptools")
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -240,7 +240,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v11.0.202409.1-ExperimentalRTF \n Internal Name: Codename PBbunnypower Notepad Variant Bun Valley \n Engine: PrettyFonts \n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v11.0.202409.0 \n Internal Name: Codename PBbunnypower Notepad Variant Bun Valley \n Engine: PrettyFonts"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_os))
         layout.addWidget(QLabel("BunnyPad is installed at " + current_directory))
         for i in range(layout.count()):
@@ -501,8 +501,9 @@ class Notepad(QMainWindow):
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
         # Set up text edit widget
-        self.textedit.setAcceptRichText(True)
+        self.textedit.setAcceptRichText(False)
         self.setCentralWidget(self.textedit)
+        self.setAcceptDrops(True)
         # Create menu bar
         menubar = QMenuBar(self)
         self.setMenuBar(menubar)
@@ -919,10 +920,10 @@ class Notepad(QMainWindow):
         self.textedit.ensureCursorVisible()
     def find_function(self):
         def find_word(word):
-            cursor = self.textEdit.document().find(word)
+            cursor = self.textedit.document().find(word)
             if not cursor.isNull():
-                self.textEdit.setTextCursor(cursor)
-                self.textEdit.ensureCursorVisible()
+                self.textedit.setTextCursor(cursor)
+                self.textedit.ensureCursorVisible()
         word_to_find, ok = QInputDialog.getText(
             self,
             "Find Word",
@@ -930,6 +931,31 @@ class Notepad(QMainWindow):
         )
         if ok and word_to_find:
             find_word(word_to_find)
+    def replace_function(self):
+        def replace_word(old_word, new_word):
+            cursor = self.textedit.textCursor()
+            document = self.textedit.document()
+            cursor.beginEditBlock()
+            while True:
+                cursor = document.find(old_word, cursor)
+                if cursor.isNull():
+                    break
+                cursor.insertText(new_word)
+            cursor.endEditBlock()
+
+        old_word, ok1 = QInputDialog.getText(
+            self,
+            "Replace Word",
+            "Enter the word you want to replace:"
+        )
+        if ok1 and old_word:
+            new_word, ok2 = QInputDialog.getText(
+                self,
+                "Replace With",
+                "Enter the new word:"
+            )
+            if ok2 and new_word:
+                replace_word(old_word, new_word)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName("BunnyPad")
