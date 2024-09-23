@@ -240,7 +240,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel("Developer Information: \n Build: v11.0.202409.0 \n Internal Name: Codename PBbunnypower Notepad Variant Bun Valley \n Engine: PrettyFonts \n Channel: FreshlyPlanted"))
+        layout.addWidget(QLabel("Developer Information: \n Build: v11.0.202409.1-Experimental \n Internal Name: Codename PBbunnypower Notepad Variant Bun Valley \n Engine: PrettyFonts \n Channel: FreshlyPlanted"))
         layout.addWidget(QLabel("You are running BunnyPad on " + display_os))
         layout.addWidget(QLabel("BunnyPad is installed at " + current_directory))
         for i in range(layout.count()):
@@ -501,7 +501,7 @@ class Notepad(QMainWindow):
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
         # Set up text edit widget
-        self.textedit.setAcceptRichText(False)
+        self.textedit.setAcceptRichText(True)
         self.setCentralWidget(self.textedit)
         # Create menu bar
         menubar = QMenuBar(self)
