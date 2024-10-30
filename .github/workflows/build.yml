@@ -55,6 +55,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./prettyfonts/v11/dist/BunnyPadv11.0.202409.1-Experimental.exe
-        asset_name: BunnyPadv11.0.202410.0.exe
+        asset_path: ./prettyfonts/v11/dist/BunnyPadv11.0.202410.1.exe
+        asset_name: BunnyPadv11.0.202410.1.exe
         asset_content_type: application/octet-stream
