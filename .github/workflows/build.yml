@@ -31,7 +31,7 @@ jobs:
       run: |
         cd ./prettyfonts/v11
         pyinstaller --noconfirm --onefile --windowed --icon "bunnypad.png"  "main.py"
-        ren ./dist/main.exe BunnyPadv11.0.202409.1-Experimental.exe
+        ren ./dist/main.exe BunnyPadv11.0.202410.1.exe
     - name: Generate Timestamp
       id: generate_timestamp
       run: |
@@ -56,5 +56,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./prettyfonts/v11/dist/BunnyPadv11.0.202409.1-Experimental.exe
-        asset_name: BunnyPadv11.0.202409.0.exe
+        asset_name: BunnyPadv11.0.202410.0.exe
         asset_content_type: application/octet-stream
