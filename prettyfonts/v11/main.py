@@ -9,15 +9,23 @@ r"""
 try:
     import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess
     from PyQt6.QtCore import *
+    from PyQt6.QtGui import QCoreApplication, QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor
     from fpdf import FPDF
-    from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
-                                 QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
+    from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu,
+                                 QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog,
                                  QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout)
-    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
     from PyQt6.QtPrintSupport import QPrintDialog
-except ImportError:
-    from os import system as cmd
-    cmd(r"python.exe -m pip install PyQt6 distro fpdf psutil setuptools")
+except:
+  import subprocess
+  import sys
+
+  required_packages = ['PyQt6', 'distro', 'fpdf', 'psutil', 'setuptools']
+  for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -27,6 +35,7 @@ def save_as_pdf(text, file_path):
     for line in lines:
         pdf.multi_cell(0, 10, txt=line)
     pdf.output(file_path)
+
 def identify_os():
     os_name = platform.system()
     if os_name == "Linux":
@@ -44,21 +53,21 @@ def identify_os():
         win_variant = platform.win32_edition() or "(Wine Environment?)"
         display_OS = f"Windows {win_version} {win_variant}"
     else:
-        display_OS = self.tr("Unknown Operating System")
+        display_OS = "Unknown Operating System"
     return display_OS
 def get_cpu_model():
     os_name = platform.system()
     if os_name == "Windows":
         try:
             cpu_name = subprocess.check_output("wmic cpu get name", shell=True).decode().strip().split("\n")[1]
-            return QCoreApplication.translate("SystemInfo", "CPU Model Name: {cpu_name}")
+            return QCoreApplication.translate("SystemInfo", f"CPU Model Name: {cpu_name}")
         except subprocess.CalledProcessError:
             return QCoreApplication.translate("SystemInfo", "CPU Model Name: Not available")
     else:
         try:
             cpu_details = subprocess.check_output("lscpu", shell=True)
             for line in cpu_details.decode().split('\n'):
-                if line.startswith(self.tr("Model name:")):
+                if line.startswith("Model name:"):
                     cpu_model = line.split(":")[1].strip()
                     return QCoreApplication.translate("SystemInfo", "CPU Model Name: {cpu_model}")
             return QCoreApplication.translate("SystemInfo", "CPU Model Name: Not available")
@@ -108,7 +117,7 @@ def get_system_info():
 def show_current_directory():
     return os.getcwd()
 class CharacterWidget(QWidget):
-    characterSelected = pyqtSignal(str)
+    #Variable not used: characterSelected = pyqtSignal(str)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.displayFont = QFont()
