@@ -13,7 +13,7 @@ try:
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
                                  QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
                                  QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout)
-    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor)
+    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor, QTextDocument)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
     from os import system as cmd
@@ -240,7 +240,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: v11.0.202410.1 \n Internal Name: " + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts"))))
+        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: v11.0.202411.2 \n Internal Name: " + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts"))))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):
@@ -627,7 +627,8 @@ class Notepad(QMainWindow):
         replace_action = QAction(QIcon("images/replace.png"), self.tr("Replace..."), self)
         replace_action.setStatusTip(self.tr("Currently in development..."))
         replace_action.setShortcut("Ctrl+H")
-        replace_action.triggered.connect(self.FeatureNotReady)
+        # replace_action.triggered.connect(self.FeatureNotReady)
+        replace_action.triggered.connect(self.replace_function)
         edit_menu.addAction(replace_action)
         # Add separator
         edit_menu.addSeparator()
@@ -932,30 +933,55 @@ class Notepad(QMainWindow):
         if ok and word_to_find:
             find_word(word_to_find)
     def replace_function(self):
+        QMessageBox.warning(
+            self,
+            self.tr("Replace Function - Warning"),
+            self.tr(
+                "The Replace feature is functional but may not work perfectly in some cases. "
+                "For example, words can be cut off and/or some data can be lost. We are working towards fixing this issue."
+            ),
+            QMessageBox.StandardButton.Ok
+        )
         def replace_word(old_word, new_word):
             cursor = self.textedit.textCursor()
             document = self.textedit.document()
-            cursor.beginEditBlock()
-            while True:
-                cursor = document.find(old_word, cursor)
-                if cursor.isNull():
-                    break
-                cursor.insertText(new_word)
-            cursor.endEditBlock()
+            cursor.beginEditBlock()  # Begin a block of edits for undo support
+            cursor.movePosition(QTextCursor.MoveOperation.Start)  # Start from the beginning of the document
+            replacement_count = 0  # Track the number of replacements
 
+            while True:
+                # Find the next occurrence of the old_word
+                cursor = document.find(old_word, cursor, QTextDocument.FindFlag.FindWholeWords)
+                if cursor.isNull():  # No more matches found
+                    break
+                cursor.insertText(new_word)  # Replace the word
+                replacement_count += 1
+
+            cursor.endEditBlock()  # End the block of edits
+            return replacement_count
+
+        # Get the word to replace
         old_word, ok1 = QInputDialog.getText(
             self,
             self.tr("Replace Word"),
             self.tr("Enter the word you want to replace:")
         )
-        if ok1 and old_word:
+        if ok1 and old_word.strip():  # Ensure old_word is valid
+            # Get the replacement word
             new_word, ok2 = QInputDialog.getText(
                 self,
                 self.tr("Replace With"),
                 self.tr("Enter the new word:")
             )
-            if ok2 and new_word:
-                replace_word(old_word, new_word)
+            if ok2:
+                # Perform the replacement and provide feedback
+                replaced_count = replace_word(old_word, new_word)
+                QMessageBox.information(
+                    self,
+                    self.tr("Replace Completed"),
+                    self.tr(f"Replaced {replaced_count} occurrence(s) of '{old_word}' with '{new_word}'.")
+                )
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName("BunnyPad")
