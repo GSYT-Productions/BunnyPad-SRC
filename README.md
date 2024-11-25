@@ -1,5 +1,19 @@
-# BunnyPad Stats
 BunnyPad: The Newest and Cutest Way to take notes!
+### License and Trademark Usage
+
+This project is licensed under the Apache License 2.0.
+
+**Trademark Usage:**
+You are allowed to use the "BunnyPad" name and logos for any modifications or forks of this software, provided that:
+1. The modified versions remain open-source.
+2. The source code is available to the public.
+3. An attribution is included in the "About" page stating the modifications and linking back to the original [BunnyPad repository](https://github.com/GSYT-Productions/BunnyPad-SRC).
+
+**Contribution Request:**
+It is suggested/requested but not required for modifications to be submitted back to the original repository to help improve the project for everyone.
+
+
+# BunnyPad Stats
 
 Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/downloads/GSYT-Productions/BunnyPad-SRC/total.svg)]()
 
