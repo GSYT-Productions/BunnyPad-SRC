@@ -21,7 +21,6 @@ Itch.io Downloads: 244 [I have to change this manually]
 
 SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourceforge/dt/bunnypad)
 # BunnyPad Contributors
-BunnyPad: The Newest and Cutest Way to take notes!
 These people helped get the program to its current state:
 
 PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her
