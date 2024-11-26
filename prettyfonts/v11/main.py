@@ -891,7 +891,7 @@ class Notepad(QMainWindow):
     def credits(self):
         CreditsDialog().exec()
     def sysinfo(self):
-        SystemInfoDialog().exec().
+        SystemInfoDialog().exec()
     def FeatureNotReady(self):
         FeatureNotReady().exec()
     def cake(self):
