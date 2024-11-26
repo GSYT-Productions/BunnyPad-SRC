@@ -51,19 +51,20 @@ def get_cpu_model():
     if os_name == "Windows":
         try:
             cpu_name = subprocess.check_output("wmic cpu get name", shell=True).decode().strip().split("\n")[1]
-            return QCoreApplication.translate("SystemInfo", "CPU Model Name: {cpu_name}")
+            return QCoreApplication.translate("SystemInfo", f"CPU Model Name: {cpu_name}")
         except subprocess.CalledProcessError:
             return QCoreApplication.translate("SystemInfo", "CPU Model Name: Not available")
     else:
         try:
             cpu_details = subprocess.check_output("lscpu", shell=True)
             for line in cpu_details.decode().split('\n'):
-                if line.startswith(self.tr("Model name:")):
+                if line.startswith("Model name:"):
                     cpu_model = line.split(":")[1].strip()
-                    return QCoreApplication.translate("SystemInfo", "CPU Model Name: {cpu_model}")
+                    return QCoreApplication.translate("SystemInfo", f"CPU Model Name: {cpu_model}")
             return QCoreApplication.translate("SystemInfo", "CPU Model Name: Not available")
         except subprocess.CalledProcessError:
             return QCoreApplication.translate("SystemInfo", "CPU Model Name: Not available")
+
 def get_system_info():
     system_info = []
     # RAM capacity
@@ -216,6 +217,7 @@ class AboutDialog(QDialog):
         layout.addWidget(logo)
         layout.addWidget(QLabel(self.tr("A Notepad Clone named in part after Innersloth's Off-Topic Regular, PBbunnypower [aka Bunny]")))
         layout.addWidget(QLabel(self.tr("Copyright © 2023-2024 GSYT Productions, LLC\nCopyright © 2024 The BunnyPad Contributors")))
+        layout.addWidget(QLabel(self.tr("BunnyPad is licensed under the Apache 2.0 License")))
         original_phrase = "pet the bunny"
         anagrams = [
             "tnentbpu y he",
@@ -240,7 +242,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: v11.0.202411.2 \n Internal Name: " + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts"))))
+        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: v11.0.202411.3 \n Internal Name: " + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts"))))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):
@@ -308,7 +310,7 @@ class FeatureNotReady(QDialog):
         title.setFont(font)
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('bunnypad.png')))
-        message = QLabel(self.tr("The requested feature caused instabilities during testing and has been disabled until further notice. We apologize for the inconvenience."))
+        message = QLabel(self.tr("The requested feature is either incomplete or caused instabilities during testing and has been disabled until further notice. We apologize for the inconvenience."))
         ok_button = QPushButton(self.tr("OK"))
         ok_button.clicked.connect(self.accept)
         layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -410,7 +412,7 @@ class DownloadOptions(QDialog):
             "Latest CarrotPatch Build": "Latest CarrotPatch Build",
             "IconPacks": "IconPacks",
             "Stylesheets": "Stylesheets",
-            "Rick Roll": "Rick Roll"
+            "r3dfox Download": "r3dfox Download"
         }
         # Create buttons and add them to the grid
         row, col = 0, 0
@@ -445,7 +447,6 @@ class DownloadOptions(QDialog):
     @pyqtSlot()
     def on_Latest_CarrotPatch_Build_clicked(self):
         url = "https://github.com/GSYT-Productions/BunnyPad-SRC/tree/latest-carrotpatch"
-        # The Salamander eats its own tail.
         webbrowser.open(url)
     @pyqtSlot()
     def on_IconPacks_clicked(self):
@@ -456,8 +457,8 @@ class DownloadOptions(QDialog):
         url = "https://gsyt-productions.github.io/BunnyPadCustomizer/stylesheets"
         webbrowser.open(url)
     @pyqtSlot()
-    def on_Rick_Roll_clicked(self):
-        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    def on_r3dfox_Download_clicked(self):
+        url = "https://github.com/Eclipse-Community/r3dfox/releases/"
         webbrowser.open(url)
 class AlanWalkerWIAEgg(QDialog):
     def __init__(self, *args, **kwargs):
@@ -660,37 +661,44 @@ class Notepad(QMainWindow):
         menubar.addMenu(view_menu)
         help_menu = self.menuBar().addMenu(self.tr("Help"))
         about_action = QAction(QIcon(os.path.join('images/info.png')), self.tr("About BunnyPad"), self)
-        about_action.setStatusTip(self.tr("Find out more about BunnyPad"))  # Hungry!
+        about_action.setStatusTip(self.tr("Find out more about BunnyPad"))
         about_action.setShortcut("Alt+H")
         about_action.triggered.connect(self.about)
         help_menu.addAction(about_action)
         system_action = QAction(QIcon(os.path.join('images/info.png')), self.tr("About Your System"), self)
-        system_action.setStatusTip(self.tr("Find out more about BunnyPad's operating environment"))  # Hungry!
+        system_action.setStatusTip(self.tr("Find out more about BunnyPad's operating environment"))
         system_action.setShortcut("Shift+F1")
         system_action.triggered.connect(self.sysinfo)
         help_menu.addAction(system_action)
         credits_action = QAction(QIcon(os.path.join('images/team.png')), self.tr("Credits for BunnyPad"), self)
-        credits_action.setStatusTip(self.tr("Find out more about BunnyPad's Team"))  # Hungry!
+        credits_action.setStatusTip(self.tr("Find out more about BunnyPad's Team"))
         credits_action.setShortcut("Alt+C")
         credits_action.triggered.connect(self.credits)
         help_menu.addAction(credits_action)
         cake_action = QAction(QIcon(os.path.join('images/cake.png')), self.tr("Cake :D"), self)
-        cake_action.setStatusTip(self.tr("Click here for some Cake"))  # Hungry!
+        cake_action.setStatusTip(self.tr("Click here for some Cake"))
         cake_action.setShortcut("Alt+A")
         cake_action.triggered.connect(self.cake)
         help_menu.addAction(cake_action)
         contact_support_action = QAction(QIcon(os.path.join('images/support.png')), self.tr("Contact Us"), self)
-        contact_support_action.setStatusTip(self.tr("Find out how to contact the team!"))  # Hungry!
+        contact_support_action.setStatusTip(self.tr("Find out how to contact the team!"))
         contact_support_action.setShortcut("Alt+S")
         contact_support_action.triggered.connect(self.support)
         help_menu.addAction(contact_support_action)
-        # For v11: Source Code Download
+        # For v11: Source Code Download (Added in v10 [Decipad] instead)
         download_action = QAction(QIcon("images/share.png"), self.tr("Download BunnyPad Tools"), self)
         download_action.setStatusTip(self.tr("For BunnyPad Users to Customize their BunnyPad"))
         download_action.setShortcut("Ctrl+J")
         download_action.triggered.connect(self.download)
         # download_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(download_action)
+        # Updater - We need to do more research into this
+        update_action = QAction(QIcon("images/share.png"), self.tr("Check For Updates"), self)
+        update_action.setStatusTip(self.tr("Download The Latest Version directly in BunnyPad"))
+        update_action.setShortcut("Alt+U")
+        # update_action.triggered.connect(self.update)
+        update_action.triggered.connect(self.FeatureNotReady)
+        help_menu.addAction(update_action)
         # Create the statusbar action
         statusbar_action = QAction(self.tr("Show statusbar"), self, checkable=True)
         statusbar_action.setStatusTip(self.tr("Toggle statusbar"))
@@ -794,6 +802,7 @@ class Notepad(QMainWindow):
                         self.file_path = file_path
                         self.setWindowTitle(self.tr(f"{os.path.basename(file_path)} - BunnyPad"))
                         self.open_file_ran = True
+                        self.save_file_ran = True
                     if file_path.endswith(('.json', '.py')):
                         QMessageBox.warning(self, self.tr("Warning"), self.tr("Auto-indentation and syntax highlighting are currently unavailable for JSON and Python files."))
                 except UnicodeDecodeError:
@@ -882,7 +891,7 @@ class Notepad(QMainWindow):
     def credits(self):
         CreditsDialog().exec()
     def sysinfo(self):
-        SystemInfoDialog().exec()
+        SystemInfoDialog().exec().
     def FeatureNotReady(self):
         FeatureNotReady().exec()
     def cake(self):
