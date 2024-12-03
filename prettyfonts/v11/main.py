@@ -7,17 +7,19 @@ r"""
                          |___/                  
 """
 try:
-    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess
+    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess, requests
     from PyQt6.QtCore import *
     from fpdf import FPDF
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
                                  QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, 
-                                 QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout)
+                                 QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout, QProgressBar, QCheckBox)
     from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor, QTextDocument)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
     from os import system as cmd
     cmd(r"python.exe -m pip install PyQt6 distro fpdf psutil setuptools")
+# Define the current version
+current_version = "v11.0.202412.1"
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -242,7 +244,7 @@ class AboutDialog(QDialog):
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: v11.0.202411.3 \n Internal Name: " + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts"))))
+        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: ") + current_version + self.tr("\n Internal Name: ") + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts")))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):
@@ -275,8 +277,7 @@ class SystemInfoDialog(QDialog):
         layout.addWidget(QLabel(self.tr("Operating System: ") + display_os))
         layout.addWidget(QLabel(self.tr("Installation Directory: ") + current_directory))
         for i in range(layout.count()):
-            layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        
+            layout.itemAt(i).setAlignment(Qt.AlignmentFlag.AlignHCenter)       
 class CreditsDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(CreditsDialog, self).__init__(*args, **kwargs)
@@ -489,6 +490,156 @@ class AlanWalkerWIAEgg(QDialog):
         layout.addWidget(logo)
         msg_box.setText("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
         msg_box.exec()
+class UpdateChecker(QThread):
+    update_check_completed = pyqtSignal(dict)
+
+    def __init__(self, repo_owner, repo_name, use_pre_release):
+        super().__init__()
+        self.repo_owner = repo_owner
+        self.repo_name = repo_name
+        self.use_pre_release = use_pre_release
+
+    def run(self):
+        release_info = self.check_for_updates()
+        self.update_check_completed.emit(release_info)
+
+    def get_latest_release(self):
+        url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/releases"
+        response = requests.get(url)
+        if response.status_code == 200:
+            releases = response.json()
+            for release in releases:
+                if (self.use_pre_release and release['prerelease']) or (not self.use_pre_release and not release['prerelease']):
+                    return {
+                        'version': release['tag_name'],
+                        'url': release['assets'][0]['browser_download_url'],
+                        'name': release['assets'][0]['name'],
+                        'prerelease': release['prerelease'],
+                        'tag_name': release['tag_name']
+                    }
+        return None
+
+    def check_for_updates(self):
+        latest_release = self.get_latest_release()
+        if latest_release:
+            latest_version = latest_release['version']
+            if current_version != latest_version:
+                return latest_release
+        return None
+class Downloader(QThread):
+    progress = pyqtSignal(int, int, int)  # total size, downloaded size, percentage
+    download_complete = pyqtSignal(str)
+
+    def __init__(self, url, filename):
+        super().__init__()
+        self.url = url
+        self.filename = filename
+
+    def run(self):
+        response = requests.get(self.url, stream=True)
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded_size = 0
+
+        with open(self.filename, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=8192):
+                file.write(chunk)
+                downloaded_size += len(chunk)
+                self.progress.emit(total_size, downloaded_size, int(100 * downloaded_size / total_size))
+
+        self.download_complete.emit(self.filename)
+class UpdateModule(QWidget):
+    def __init__(self, repo_owner, repo_name):
+        super().__init__()
+        self.repo_owner = repo_owner
+        self.repo_name = repo_name
+        self.use_pre_release = False
+
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QVBoxLayout()
+
+        self.label = QLabel("Press 'Check for Updates' to begin.", self)
+        self.layout.addWidget(self.label)
+
+        self.progress_bar = QProgressBar(self)
+        self.layout.addWidget(self.progress_bar)
+
+        self.check_updates_button = QPushButton("Check for Updates", self)
+        self.check_updates_button.clicked.connect(self.check_for_updates)
+        self.layout.addWidget(self.check_updates_button)
+
+        self.pre_release_checkbox = QCheckBox("Include Pre-release Builds", self)
+        self.pre_release_checkbox.stateChanged.connect(self.toggle_pre_release)
+        self.layout.addWidget(self.pre_release_checkbox)
+
+        self.setLayout(self.layout)
+
+    def toggle_pre_release(self, state):
+        self.use_pre_release = bool(state)
+
+    def check_for_updates(self):
+        self.update_checker = UpdateChecker(self.repo_owner, self.repo_name, self.use_pre_release)
+        self.update_checker.update_check_completed.connect(self.on_update_check_completed)
+        self.update_checker.start()
+
+    def on_update_check_completed(self, release_info):
+        if release_info:
+            reply = QMessageBox.question(self, 'Update Available', f"A new version ({release_info['version']}) is available. Do you want to download it?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
+                self.download_update(release_info)
+        else:
+            QMessageBox.information(self, 'No Update', 'You are using the latest version.')
+            self.label.setText("No updates available.")
+
+    def download_update(self, release_info):
+        download_dir = self.get_download_directory(release_info['name'], release_info['tag_name'])
+        
+        download_path = os.path.join(download_dir, release_info['name'])
+        
+        self.label.setText("Downloading update...")
+        self.downloader = Downloader(release_info['url'], download_path)
+        self.downloader.progress.connect(self.update_progress)
+        self.downloader.download_complete.connect(self.on_download_complete)
+        self.downloader.start()
+
+    @pyqtSlot(int, int, int)
+    def update_progress(self, total_size, downloaded_size, percentage):
+        self.progress_bar.setValue(percentage)
+        self.label.setText(f"Downloading update: {downloaded_size / (1024 * 1024):.2f} MB / {total_size / (1024 * 1024):.2f} MB")
+
+    @pyqtSlot(str)
+    def on_download_complete(self, filename):
+        self.label.setText("Download complete.")
+        if "standalone" in filename.lower() or "main executable" in filename.lower() or self.use_pre_release:
+            reply = QMessageBox.question(self, 'Run Update', "Do you want to run the update now?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if reply == QMessageBox.StandardButton.Yes:
+                # Terminate the current executable
+                current_process = psutil.Process(os.getpid())
+                os.startfile(f'"{filename}"')  # Run the update installer
+                current_process.terminate()  # Terminate the current process
+        self.progress_bar.reset()
+
+    def get_download_directory(self, release_name, tag_name):
+        install_dir = "C:\\Program Files\\BunnyPad"
+        if os.path.isdir(install_dir):
+            try:
+                test_file_path = os.path.join(install_dir, "test_write.txt")
+                with open(test_file_path, 'w') as test_file:
+                    test_file.write("test")
+                os.remove(test_file_path)
+                # Has write permissions, use the Program Files directory for system-wide installs
+                return install_dir
+            except PermissionError:
+                pass
+        
+        # If it's a pre-release or the tag contains "github-actions", fall back to the current directory
+        if "github-actions" in tag_name.lower() or self.use_pre_release:
+            return os.path.dirname(os.path.abspath(__file__))
+        else:
+            return os.path.join(os.path.expanduser("~"), "Downloads")
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -499,6 +650,10 @@ class Notepad(QMainWindow):
         self.unsaved_changes_flag = False
         self.open_file_ran = False
         self.save_file_ran = False
+        # Define repository details
+        repo_owner = "GSYT-Productions"
+        repo_name = "BunnyPad-SRC"
+        self.update_module = UpdateModule(repo_owner, repo_name)
         self.textedit = QTextEdit(self)
         self.textedit.textChanged.connect(self.handle_text_changed)
         # Set up text edit widget
@@ -692,12 +847,12 @@ class Notepad(QMainWindow):
         download_action.triggered.connect(self.download)
         # download_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(download_action)
-        # Updater - We need to do more research into this
+        # Updater
         update_action = QAction(QIcon("images/share.png"), self.tr("Check For Updates"), self)
         update_action.setStatusTip(self.tr("Download The Latest Version directly in BunnyPad"))
         update_action.setShortcut("Alt+U")
-        # update_action.triggered.connect(self.update)
-        update_action.triggered.connect(self.FeatureNotReady)
+        update_action.triggered.connect(self.check_for_updates)
+        #update_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(update_action)
         # Create the statusbar action
         statusbar_action = QAction(self.tr("Show statusbar"), self, checkable=True)
@@ -990,6 +1145,8 @@ class Notepad(QMainWindow):
                     self.tr("Replace Completed"),
                     self.tr(f"Replaced {replaced_count} occurrence(s) of '{old_word}' with '{new_word}'.")
                 )
+    def check_for_updates(self):
+        self.update_module.show()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
