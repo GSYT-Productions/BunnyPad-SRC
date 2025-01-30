@@ -6,8 +6,42 @@ r"""
 |____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
                          |___/                  
 """
+import sys, os, platform, shutil, subprocess
+import importlib.util  # Secure module checking
+
+def is_module_available(module_name):
+    """Check if a module is available before importing."""
+    return importlib.util.find_spec(module_name) is not None
+
+def is_debian_based():
+    """Determine if the OS is Debian-based securely."""
+    if is_module_available("distro"):
+        import distro
+        return distro.id() in ["debian", "ubuntu", "linuxmint", "pop", "elementary", "kali", "raspbian"]
+    return False
+
+def install_with_pip(pip_cmd):
+    """Install dependencies using the specified pip command."""
+    subprocess.run(
+        [pip_cmd, "install", "--user", "--no-cache-dir", "PyQt6", "distro", "fpdf", "psutil", "setuptools"],
+        check=True
+    )
+
+def create_venv(venv_dir):
+    """Create a virtual environment if it does not already exist."""
+    if not os.path.exists(venv_dir):
+        print(f"Creating a virtual environment at {venv_dir}...")
+        try:
+            subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
+            return True
+        except subprocess.CalledProcessError:
+            print("Error: Failed to create a virtual environment.")
+            return False
+    return True
+
+# Try to import required modules, install them if missing
 try:
-    import sys, os, time, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess, requests
+    import sys, os, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess, requests
     from PyQt6.QtCore import *
     from fpdf import FPDF
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, 
@@ -16,10 +50,33 @@ try:
     from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor, QTextDocument)
     from PyQt6.QtPrintSupport import QPrintDialog
 except ImportError:
-    from os import system as cmd
-    cmd(r"python.exe -m pip install PyQt6 distro fpdf psutil setuptools")
+    venv_dir = os.path.join(os.getcwd(), "venv")  # Virtual environment directory
+    venv_pip = os.path.join(venv_dir, "bin", "pip") if platform.system() != "Windows" else os.path.join(venv_dir, "Scripts", "pip.exe")
+
+    # Check if we are already in a virtual environment
+    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        print("Virtual environment detected. Installing dependencies...")
+        install_with_pip(os.path.join(sys.prefix, "bin", "pip") if platform.system() != "Windows" else os.path.join(sys.prefix, "Scripts", "pip.exe"))
+
+    # On Debian-based systems, prefer pipx, but fall back to venv if needed
+    elif is_debian_based():
+        if shutil.which("pipx"):
+            print("Using pipx to install dependencies...")
+            subprocess.run(["pipx", "install", "PyQt6", "distro", "fpdf", "psutil", "setuptools"], check=True)
+        else:
+            print("Warning: pipx is not installed. Attempting to create a virtual environment...")
+            if create_venv(venv_dir):
+                install_with_pip(venv_pip)
+            else:
+                print("Error: Neither pipx nor venv is available. Please install pipx or create a virtual environment manually.")
+
+    # On other Linux distros and Windows, use venv if not already present
+    else:
+        if create_venv(venv_dir):
+            print("Using virtual environment's pip.")
+            install_with_pip(venv_pip)
 # Define the current version
-current_version = "v11.0.202412.1"
+current_version = "v10.1.26000.0"
 def save_as_pdf(text, file_path):
     pdf = FPDF()
     pdf.add_page()
@@ -241,10 +298,12 @@ class AboutDialog(QDialog):
                    self.tr("\"Is it true that a long time ago, firemen used to put out fires and not burn books?\""),
                    self.tr("\"Fahrenheit 451, the temperature at which paper spontaneously combusts\""),
                    self.tr("\"Do you want to know what's inside all these books? Insanity. The Eels want to measure their place in the universe,\n so they turn to these novels about non-existent people. Or worse, philosophers. \n Look, here's Spinoza. One expert screaming down another expert's throat. \"We have free will. No, all of our actions are predetermined.\" \nEach one says the opposite, and a man comes away lost, feeling more bestial and lonely than before. \nNow, if you don't want a person unhappy, you don't give them two sides of a question to worry about. Just give 'em one.. Better yet, none.\""),
+                   "バニーパッド",
                    selected_anagram]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
-        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: ") + current_version + self.tr("\n Internal Name: ") + "Codename PBbunnypower Notepad Variant Bun Valley" + self.tr("\n Engine: PrettyFonts")))
+        layout.addWidget(QLabel(self.tr("Developer Information: \n Build: ") + current_version + self.tr("\n Internal Name: ") + "Codename PBbunnypower Notepad Variant Deci Valley" + self.tr("\n Engine: PrettyFonts")))
+        layout.addWidget(QLabel(self.tr("This is the v10.1 intermediate release, for v11 was not entirely stable. This has backports from v11\nsuch as bug fixes and the update function (currently only functioning on Microsoft Windows).")))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):
@@ -371,7 +430,7 @@ class ContactUs(QDialog):
         logo = QLabel()
         logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
         layout.addWidget(logo)
-        info_label = QLabel("Website: <a href='https://gsyt-productions.github.io/'>https://gsyt-productions.github.io/</a> <br> GSYT Productions Server: <a href='https://guilded.gg/gsyt-productions'>https://guilded.gg/gsyt-productions</a> <br> BunnyPad CarrotPatch Server: <a href='https://guilded.gg/bunnypad'>https://guilded.gg/bunnypad</a> <br> Text Us: +1 (814) 204-2333")
+        info_label = QLabel("Website: <a href='http://bunnypad.eclipse.cx' style=\"color: #0078D7;\">http://bunnypad.eclipse.cx/</a> <br> GSYT Productions Server: <a href='https://guilded.gg/gsyt-productions' style=\"color: #0078D7;\">https://guilded.gg/gsyt-productions</a> <br> BunnyPad CarrotPatch Server: <a href='https://guilded.gg/bunnypad' style=\"color: #0078D7;\">https://guilded.gg/bunnypad</a><br>BunnyPad Donation Link: <a href='https://throne.com/bunnypad' style=\"color: #0078D7;\">https://throne.com/bunnypad</a> <br> Text Us: +1 (814) 204-2333")
         info_label.setTextFormat(Qt.TextFormat.RichText)
         info_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         info_label.setOpenExternalLinks(True)
@@ -386,12 +445,8 @@ class ContactUs(QDialog):
     def activate_galaxynote7_easter_egg(self, event):
         # galaxynote7 easter egg code
         msg_box = QMessageBox()
-        layout = QVBoxLayout(self)
         msg_box.setWindowTitle("Galaxy Note 7")
         msg_box.setWindowIcon(QIcon(os.path.join('./bunnypad.png')))
-        logo = QLabel()
-        logo.setPixmap(QPixmap(os.path.join('./bunnypad.png')))
-        layout.addWidget(logo)
         msg_box.setText(self.tr("So I heard that the") + "Samsung Galaxy Note 7" + self.tr("was the bomb, rather literally"))
         msg_box.exec()
 class DownloadOptions(QDialog):
@@ -526,6 +581,8 @@ class UpdateChecker(QThread):
             if current_version != latest_version:
                 return latest_release
         return None
+
+
 class Downloader(QThread):
     progress = pyqtSignal(int, int, int)  # total size, downloaded size, percentage
     download_complete = pyqtSignal(str)
@@ -547,6 +604,8 @@ class Downloader(QThread):
                 self.progress.emit(total_size, downloaded_size, int(100 * downloaded_size / total_size))
 
         self.download_complete.emit(self.filename)
+
+
 class UpdateModule(QWidget):
     def __init__(self, repo_owner, repo_name):
         super().__init__()
@@ -585,9 +644,14 @@ class UpdateModule(QWidget):
 
     def on_update_check_completed(self, release_info):
         if release_info:
-            reply = QMessageBox.question(self, 'Update Available', f"A new version ({release_info['version']}) is available. Do you want to download it?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
-            if reply == QMessageBox.StandardButton.Yes:
+            reply = QMessageBox.question(
+                self,
+                'Update Available',
+                f"A new version ({release_info['version']}) is available. Do you want to download it?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if reply == QMessageBox.StandardButton.Yes.value:
                 self.download_update(release_info)
         else:
             QMessageBox.information(self, 'No Update', 'You are using the latest version.')
@@ -613,33 +677,46 @@ class UpdateModule(QWidget):
     def on_download_complete(self, filename):
         self.label.setText("Download complete.")
         if "standalone" in filename.lower() or "main executable" in filename.lower() or self.use_pre_release:
-            reply = QMessageBox.question(self, 'Run Update', "Do you want to run the update now?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
-            if reply == QMessageBox.StandardButton.Yes:
-                # Terminate the current executable
-                current_process = psutil.Process(os.getpid())
-                os.startfile(f'"{filename}"')  # Run the update installer
-                current_process.terminate()  # Terminate the current process
+            reply = QMessageBox.question(
+                self,
+                self.tr('Run Update'),
+                self.tr("Do you want to run the update now?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if reply == QMessageBox.StandardButton.Yes.value:
+                self.run_update(filename)
+        else:
+            reply = QMessageBox.question(
+                self,
+                self.tr("Run Update Installer"),
+                self.tr("Do you want to install the update now?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if reply == QMessageBox.StandardButton.Yes.value:
+                self.run_update(filename)
         self.progress_bar.reset()
 
     def get_download_directory(self, release_name, tag_name):
-        install_dir = "C:\\Program Files\\BunnyPad"
-        if os.path.isdir(install_dir):
-            try:
-                test_file_path = os.path.join(install_dir, "test_write.txt")
-                with open(test_file_path, 'w') as test_file:
-                    test_file.write("test")
-                os.remove(test_file_path)
-                # Has write permissions, use the Program Files directory for system-wide installs
-                return install_dir
-            except PermissionError:
-                pass
-        
-        # If it's a pre-release or the tag contains "github-actions", fall back to the current directory
-        if "github-actions" in tag_name.lower() or self.use_pre_release:
-            return os.path.dirname(os.path.abspath(__file__))
+        install_dir = None
+
+        if os.name == 'nt':  # Windows
+            install_dir = "C:\\Program Files\\BunnyPad"
+        elif os.name == 'posix':  # macOS or Linux
+            install_dir = "/Applications" if os.path.isdir("/Applications") else "/usr/local/bin"
+
+        if install_dir and os.access(install_dir, os.W_OK):
+            return install_dir
         else:
-            return os.path.join(os.path.expanduser("~"), "Downloads")
+            return os.path.expanduser("~/Downloads")
+
+    def run_update(self, filename):
+        print("DEBUG: Initializing update and killing current process")
+        if os.name == 'posix':
+            os.chmod(filename, stat.S_IRWXU)  # Make the file executable
+        subprocess.Popen([filename], shell=True)  # Run the installer
+        psutil.Process(os.getpid()).terminate()  # Terminate the current process
 class Notepad(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -783,8 +860,8 @@ class Notepad(QMainWindow):
         replace_action = QAction(QIcon("images/replace.png"), self.tr("Replace..."), self)
         replace_action.setStatusTip(self.tr("Currently in development..."))
         replace_action.setShortcut("Ctrl+H")
-        # replace_action.triggered.connect(self.FeatureNotReady)
-        replace_action.triggered.connect(self.replace_function)
+        replace_action.triggered.connect(self.FeatureNotReady)
+        # replace_action.triggered.connect(self.replace_function)
         edit_menu.addAction(replace_action)
         # Add separator
         edit_menu.addSeparator()
@@ -848,7 +925,7 @@ class Notepad(QMainWindow):
         # download_action.triggered.connect(self.FeatureNotReady)
         help_menu.addAction(download_action)
         # Updater
-        update_action = QAction(QIcon("images/share.png"), self.tr("Check For Updates"), self)
+        update_action = QAction(QIcon("images/update.png"), self.tr("Check For Updates"), self)
         update_action.setStatusTip(self.tr("Download The Latest Version directly in BunnyPad"))
         update_action.setShortcut("Alt+U")
         update_action.triggered.connect(self.check_for_updates)
