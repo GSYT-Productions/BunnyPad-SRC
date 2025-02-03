@@ -40,11 +40,16 @@ def create_venv(venv_dir):
 # Try to import required modules, install them if missing
 try:
     import sys, os, platform, distro, unicodedata, textwrap, datetime, re, random, webbrowser, psutil, shutil, subprocess, requests
-    from PyQt6.QtCore import *
+    from PyQt5.QtCore import *
     from fpdf import FPDF
-    from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QFileDialog, QWidget, QDialog, QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QHBoxLayout, QDockWidget, QLabel, QToolTip, QPushButton, QFontDialog, QMessageBox, QInputDialog, QDialogButtonBox, QLCDNumber, QSizePolicy, QWidget, QGridLayout, QProgressBar, QCheckBox)
-    from PyQt6.QtGui import (QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QAction, QColor, QTextDocument)
-    from PyQt6.QtPrintSupport import QPrintDialog
+    from PyQt5.QtWidgets import (
+        QApplication, QMainWindow, QTextEdit, QAction, QFileDialog, QWidget, QDialog, 
+        QMenuBar, QMenu, QToolBar, QStatusBar, QVBoxLayout, QDockWidget, QLabel, 
+        QToolTip, QPushButton, QFontDialog, QMessageBox, QProgressBar, QCheckBox
+    )
+    from PyQt5.QtGui import QTextCursor, QIcon, QFont, QPixmap, QPainter, QFontMetrics, QColor
+    from PyQt5.QtPrintSupport import QPrintDialog
+
 except ImportError:
     venv_dir = os.path.join(os.getcwd(), "venv")  # Virtual environment directory
     venv_pip = os.path.join(venv_dir, "bin", "pip") if platform.system() != "Windows" else os.path.join(venv_dir, "Scripts", "pip.exe")
@@ -56,7 +61,7 @@ except ImportError:
     elif is_debian_based():
         if shutil.which("pipx"):
             print("Using pipx to install dependencies...")
-            subprocess.run(["pipx", "install", "PyQt6", "distro", "fpdf", "psutil", "setuptools"], check=True)
+            subprocess.run(["pipx", "install", "PyQt5", "distro", "fpdf", "psutil", "setuptools"], check=True)
         else:
             print("Warning: pipx is not installed. Attempting to create a virtual environment...")
             if create_venv(venv_dir):
@@ -68,7 +73,6 @@ except ImportError:
         if create_venv(venv_dir):
             print("Using virtual environment's pip.")
             install_with_pip(venv_pip)
-
 # Define the current version
 current_version = "v10.1.26000.1"
 # Build a logfile path in the user's home directory.
@@ -175,7 +179,7 @@ def show_current_directory():
 class CharacterWidget(QWidget):
     characterSelected = pyqtSignal(str)
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super(CharacterWidget, self).__init__(parent)
         self.displayFont = QFont()
         self.squareSize = 24
         self.columns = 16
@@ -191,12 +195,12 @@ class CharacterWidget(QWidget):
         self.displayFont.setPointSize(fontSize)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
-        self.update()
+        self.update() 
     def updateStyle(self, fontStyle):
         fontDatabase = QFontDatabase()
         oldStrategy = self.displayFont.styleStrategy()
         self.displayFont = fontDatabase.font(self.displayFont.family(),
-                                              fontStyle, self.displayFont.pointSize())
+                fontStyle, self.displayFont.pointSize())
         self.displayFont.setStyleStrategy(oldStrategy)
         self.squareSize = max(24, QFontMetrics(self.displayFont).xHeight() * 3)
         self.adjustSize()
@@ -208,6 +212,7 @@ class CharacterWidget(QWidget):
             self.displayFont.setStyleStrategy(QFont.NoFontMerging)
         self.adjustSize()
         self.update()
+    # Add the following method to the class
     def setColumns(self, columns):
         self.columns = columns
         self.adjustSize()
@@ -215,56 +220,58 @@ class CharacterWidget(QWidget):
     def sizeHint(self):
         return QSize(self.columns * self.squareSize, int((65536 / self.columns) * self.squareSize))
     def mouseMoveEvent(self, event):
-        widgetPosition = self.mapFromGlobal(event.globalPosition().toPoint())
+        widgetPosition = self.mapFromGlobal(event.globalPos())
         key = (widgetPosition.y() // self.squareSize) * self.columns + widgetPosition.x() // self.squareSize
-        text = '<p>Character: <span style="font-size: 24pt; font-family: %s">%s</span><p>Value: 0x%x' % (
-            self.displayFont.family(), self._chr(key), key)
-        QToolTip.showText(event.globalPosition().toPoint(), text, self)
+        text = '<p>Character: <span style="font-size: 24pt; font-family: %s">%s</span><p>Value: 0x%x' % (self.displayFont.family(), self._chr(key), key)
+        QToolTip.showText(event.globalPos(), text, self)
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.lastKey = (event.pos().y() // self.squareSize) * self.columns + event.pos().x() // self.squareSize
+        if event.button() == Qt.LeftButton:
+            self.lastKey = (event.y() // self.squareSize) * self.columns + event.x() // self.squareSize
             key_ch = self._chr(self.lastKey)
             if unicodedata.category(key_ch) != 'Cn':
                 self.characterSelected.emit(key_ch)
             self.update()
         else:
-            super().mousePressEvent(event)
+            super(CharacterWidget, self).mousePressEvent(event)
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(event.rect(), QColor("white"))
+        painter.fillRect(event.rect(), Qt.white)
         painter.setFont(self.displayFont)
         redrawRect = event.rect()
         beginRow = redrawRect.top() // self.squareSize
         endRow = redrawRect.bottom() // self.squareSize
         beginColumn = redrawRect.left() // self.squareSize
         endColumn = redrawRect.right() // self.squareSize
-        painter.setPen(QColor("gray"))
+        painter.setPen(Qt.gray)
         for row in range(beginRow, endRow + 1):
             for column in range(beginColumn, endColumn + 1):
                 painter.drawRect(column * self.squareSize,
-                                 row * self.squareSize, self.squareSize,
-                                 self.squareSize)
+                        row * self.squareSize, self.squareSize,
+                        self.squareSize)
         fontMetrics = QFontMetrics(self.displayFont)
-        painter.setPen(QColor("black"))
+        painter.setPen(Qt.black)
         for row in range(beginRow, endRow + 1):
             for column in range(beginColumn, endColumn + 1):
                 key = row * self.columns + column
                 painter.setClipRect(column * self.squareSize,
-                                    row * self.squareSize, self.squareSize,
-                                    self.squareSize)
+                        row * self.squareSize, self.squareSize,
+                        self.squareSize)
                 if key == self.lastKey:
                     painter.fillRect(column * self.squareSize + 1,
-                                     row * self.squareSize + 1, self.squareSize,
-                                     self.squareSize, QColor("red"))
+                            row * self.squareSize + 1, self.squareSize,
+                            self.squareSize, Qt.red)
                 key_ch = self._chr(key)
-                painter.drawText(column * self.squareSize + (self.squareSize // 2) - fontMetrics.horizontalAdvance(
-                    key_ch) // 2,
-                                 row * self.squareSize + 4 + fontMetrics.ascent(),
-                                 key_ch)
+                painter.drawText(column * self.squareSize + (self.squareSize // 2) - fontMetrics.width(key_ch) // 2,
+                 row * self.squareSize + 4 + fontMetrics.ascent(),
+                 key_ch)
     @staticmethod
     def _chr(codepoint):
-        # Python v3.
-        return chr(codepoint)
+            # Python v3.
+            return chr(codepoint)
+    def setColumns(self, columns):
+        self.columns = columns
+        self.adjustSize()
+        self.update()
 class AboutDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(AboutDialog, self).__init__(*args, **kwargs)

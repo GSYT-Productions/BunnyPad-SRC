@@ -1,0 +1,3 @@
+Name: FluentOrage_DFLT
+Creator: BunnyFndr
+Special Notes: 	iconpack was made using icons from https://fluenticons.co/
