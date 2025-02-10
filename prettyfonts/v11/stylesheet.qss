@@ -1,6 +1,6 @@
 /* Default Stylesheet for BunnyPad */
 
-﻿/* Set the background color of icons */
+/* Set the background color of icons */
 QLabel[icon=true] {
     background-color: #0078D7;
     border-radius: 5px; /* Adjust the value as needed */
