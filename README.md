@@ -10,15 +10,15 @@ SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourcefor
 # BunnyPad Contributors
 These people helped get the program to its current state:
 
-PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her\n
-BunnyFndr - Main Co-developer
-GarryStraitYT - Main Developer
-ZeRoTeCh00 - Promoted BunnyPad during stream
-UnityAI - Helped with bug checking the program
-ByPad - Porting to Linux
-i486girl and K4sum1 - Helping with ideas
-Wolfieboy09 - Contributor, Bug Hunter
-teknixstuff - Debugging, assisting with try:except statements
+PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her\
+BunnyFndr - Main Co-developer\
+GarryStraitYT - Main Developer\
+ZeRoTeCh00 - Promoted BunnyPad during stream\
+UnityAI - Helped with bug checking the program\
+ByPad - Porting to Linux\
+i486girl and K4sum1 - Helping with ideas\
+Wolfieboy09 - Contributor, Bug Hunter\
+teknixstuff - Debugging, assisting with try:except statements\
 ### License and Trademark Usage
 
 This project is licensed under the Apache License 2.0.
