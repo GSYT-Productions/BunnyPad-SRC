@@ -23,7 +23,7 @@ def is_debian_based():
 
 def install_with_pip(pip_cmd):
     """Install dependencies using the specified pip command."""
-    subprocess.run([pip_cmd, "install", "--user", "--no-cache-dir", "PyQt6", "distro", "fpdf", "psutil", "setuptools"], check=True)
+    subprocess.run([pip_cmd, "install", "PyQt5", "distro", "fpdf", "psutil", "setuptools", "requests"], check=True)
 
 def create_venv(venv_dir):
     """Create a virtual environment if it does not already exist."""
@@ -61,7 +61,7 @@ except ImportError:
     elif is_debian_based():
         if shutil.which("pipx"):
             print("Using pipx to install dependencies...")
-            subprocess.run(["pipx", "install", "PyQt5", "distro", "fpdf", "psutil", "setuptools"], check=True)
+            subprocess.run(["pipx", "install", "PyQt5", "distro", "fpdf", "psutil", "requests", "setuptools"], check=True)
         else:
             print("Warning: pipx is not installed. Attempting to create a virtual environment...")
             if create_venv(venv_dir):
@@ -74,7 +74,7 @@ except ImportError:
             print("Using virtual environment's pip.")
             install_with_pip(venv_pip)
 # Define the current version
-current_version = "v10.1.26000.1"
+current_version = "v10.1.26000.3037"
 # Build a logfile path in the user's home directory.
 log_filename = Path.home() / f"BunnyPad_update_log.{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 
@@ -145,34 +145,6 @@ def get_system_info():
     system_info.append(diskspace)
     # CPU details
     system_info.append(get_cpu_model())
-    # Screen resolution (not available on all platforms)
-    try:
-        screen_info = os.get_terminal_size()
-        resolution = QCoreApplication.translate("SystemInfo", f"Resolution: {screen_info.columns}x{screen_info.lines}")
-        system_info.append(resolution)
-    except OSError:
-        system_info.append(QCoreApplication.translate("SystemInfo", "Resolution: Not available"))
-    # GPU and VRAM (not available on all platforms)
-    os_name = platform.system()
-    if os_name != "Windows":
-        try:
-            gpu_info = subprocess.check_output("lshw -C display | grep product", shell=True)
-            gpu_name = gpu_info.decode().strip().split(":")[1]
-            system_info.append(QCoreApplication.translate("SystemInfo", f"GPU: {gpu_name}"))
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            system_info.append(QCoreApplication.translate("SystemInfo", "GPU: Not available"))
-    else:  # Windows
-        try:
-            gpu_info = subprocess.check_output("wmic path win32_videocontroller get caption,adapterram", shell=True)
-            gpu_info = gpu_info.decode().split("\n")[1].split(",")
-            if len(gpu_info) >= 2:
-                gpu_name = gpu_info[0].strip()
-                vram = int(gpu_info[1]) / (1024**3)
-                system_info.append(QCoreApplication.translate("SystemInfo", f"GPU: {gpu_name} (VRAM: {vram:.2f} GB)"))
-            else:
-                system_info.append(QCoreApplication.translate("SystemInfo", "GPU: Not available"))
-        except (subprocess.CalledProcessError, IndexError):
-            system_info.append(QCoreApplication.translate("SystemInfo", "GPU: Not available"))
     return '\n'.join(system_info)
 def show_current_directory():
     return os.getcwd()
@@ -315,7 +287,7 @@ class AboutDialog(QDialog):
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
         layout.addWidget(QLabel(self.tr("Developer Information: \n Build: ") + current_version + self.tr("\n Internal Name: ") + "Codename PBbunnypower Notepad Variant Deci Valley" + self.tr("\n Engine: PrettyFonts")))
-        layout.addWidget(QLabel(self.tr("This is the v10.1 intermediate release, for v11 was not entirely stable. This has backports from v11\nsuch as bug fixes and the update function (currently only functioning on Microsoft Windows).")))
+        layout.addWidget(QLabel(self.tr("This is the v10X intermediate release, for v11 was not entirely stable. This has backports from v11\nsuch as bug fixes and the update function (currently only known to be functioning on Microsoft Windows).")))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):

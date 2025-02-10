@@ -23,7 +23,7 @@ def is_debian_based():
 
 def install_with_pip(pip_cmd):
     """Install dependencies using the specified pip command."""
-    subprocess.run([pip_cmd, "install", "--user", "--no-cache-dir", "PyQt6", "distro", "fpdf", "psutil", "setuptools"], check=True)
+    subprocess.run([pip_cmd, "install", "--no-cache-dir", "PyQt6", "distro", "fpdf", "psutil", "setuptools", "requests"], check=True)
 
 def create_venv(venv_dir):
     """Create a virtual environment if it does not already exist."""
@@ -56,7 +56,7 @@ except ImportError:
     elif is_debian_based():
         if shutil.which("pipx"):
             print("Using pipx to install dependencies...")
-            subprocess.run(["pipx", "install", "PyQt6", "distro", "fpdf", "psutil", "setuptools"], check=True)
+            subprocess.run(["pipx", "install", "PyQt6", "distro", "fpdf", "psutil", "setuptools", "requests"], check=True)
         else:
             print("Warning: pipx is not installed. Attempting to create a virtual environment...")
             if create_venv(venv_dir):
@@ -70,7 +70,7 @@ except ImportError:
             install_with_pip(venv_pip)
 
 # Define the current version
-current_version = "v10.1.26000.1"
+current_version = "v10.1.26000.3037"
 # Build a logfile path in the user's home directory.
 log_filename = Path.home() / f"BunnyPad_update_log.{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 
@@ -308,7 +308,7 @@ class AboutDialog(QDialog):
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
         layout.addWidget(QLabel(self.tr("Developer Information: \n Build: ") + current_version + self.tr("\n Internal Name: ") + "Codename PBbunnypower Notepad Variant Deci Valley" + self.tr("\n Engine: PrettyFonts")))
-        layout.addWidget(QLabel(self.tr("This is the v10.1 intermediate release, for v11 was not entirely stable. This has backports from v11\nsuch as bug fixes and the update function (currently only functioning on Microsoft Windows).")))
+        layout.addWidget(QLabel(self.tr("This is the v10X intermediate release, for v11 was not entirely stable. This has backports from v11\nsuch as bug fixes and the update function (currently only known to be functioning on Microsoft Windows).")))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on " )+ display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + current_directory))
         for i in range(layout.count()):
