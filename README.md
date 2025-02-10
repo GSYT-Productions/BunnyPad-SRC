@@ -10,7 +10,7 @@ SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourcefor
 # BunnyPad Contributors
 These people helped get the program to its current state:
 
-PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her
+PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her\n
 BunnyFndr - Main Co-developer
 GarryStraitYT - Main Developer
 ZeRoTeCh00 - Promoted BunnyPad during stream
