@@ -19,7 +19,7 @@ It is suggested/requested but not required for modifications to be submitted bac
 
 Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/downloads/GSYT-Productions/BunnyPad-SRC/total.svg)]()
 
-Itch.io Downloads: 244 [I have to change this manually]
+Itch.io Downloads: 270 [I have to change this manually]
 
 SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourceforge/dt/bunnypad)
 # BunnyPad Contributors
