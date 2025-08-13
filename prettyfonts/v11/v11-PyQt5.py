@@ -260,7 +260,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def safe_subprocess_run(cmd, shell=False, capture_output=True, text=True, timeout=30):
+def safe_subprocess_run(cmd, shell=False, capture_output=True, text=True, timeout=10):
     """Run subprocess safely and return CompletedProcess or None."""
     try:
         if capture_output:
@@ -270,7 +270,7 @@ def safe_subprocess_run(cmd, shell=False, capture_output=True, text=True, timeou
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=text,
-                timeout=timeout,
+                timeout=timeout,  # Reduced from 30 to 10 seconds
                 check=False,
             )
         else:
@@ -335,10 +335,94 @@ def save_as_pdf(text: str, file_path: str) -> bool:
 
 
 
+def get_real_windows_build() -> tuple:
+    """Get real Windows build numbers using RtlGetNtVersionNumbers (anti-spoofing)."""
+    try:
+        if platform.system() != "Windows":
+            return None, None, None
+            
+        import ctypes
+        from ctypes import wintypes
+        
+        # Load ntdll.dll
+        ntdll = ctypes.WinDLL('ntdll.dll')
+        
+        # Define the function prototype
+        RtlGetNtVersionNumbers = ntdll.RtlGetNtVersionNumbers
+        RtlGetNtVersionNumbers.argtypes = [
+            ctypes.POINTER(wintypes.DWORD),  # MajorVersion
+            ctypes.POINTER(wintypes.DWORD),  # MinorVersion
+            ctypes.POINTER(wintypes.DWORD)   # BuildNumber
+        ]
+        RtlGetNtVersionNumbers.restype = None
+        
+        # Create variables to hold the results
+        major = wintypes.DWORD()
+        minor = wintypes.DWORD()
+        build = wintypes.DWORD()
+        
+        # Call the function
+        RtlGetNtVersionNumbers(
+            ctypes.byref(major),
+            ctypes.byref(minor),
+            ctypes.byref(build)
+        )
+        
+        # Extract the real build number (remove the high bits)
+        real_build = build.value & ~0xF0000000
+        
+        return major.value, minor.value, real_build
+        
+    except Exception as e:
+        logger.warning(f"Failed to get real Windows build: {e}")
+        return None, None, None
+
+def get_windows_edition_real() -> str:
+    """Get Windows edition using multiple methods for anti-spoofing."""
+    try:
+        if platform.system() != "Windows":
+            return None
+            
+        import winreg
+        
+        # Method 1: Try to get from registry with anti-spoofing checks
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+            
+            # Get multiple registry values for validation
+            product_name = winreg.QueryValueEx(key, "ProductName")[0]
+            edition_id = winreg.QueryValueEx(key, "EditionID")[0]
+            installation_type = winreg.QueryValueEx(key, "InstallationType")[0]
+            
+            winreg.CloseKey(key)
+            
+            # Combine information for better identification
+            if edition_id and edition_id != "Core":
+                return f"{product_name} ({edition_id})"
+            else:
+                return product_name
+                
+        except Exception:
+            pass
+        
+        # Method 2: Try platform module as fallback
+        try:
+            if hasattr(platform, "win32_edition"):
+                return platform.win32_edition()
+        except Exception:
+            pass
+            
+        return None
+        
+    except Exception as e:
+        logger.warning(f"Failed to get Windows edition: {e}")
+        return None
+
 def identify_os() -> str:
     """Return readable OS description with fallbacks."""
     try:
         os_name = platform.system()
+        
         if os_name == "Linux":
             try:
                 if distro:
@@ -350,11 +434,16 @@ def identify_os() -> str:
                 return f"Linux {linux_name} {linux_ver} - Kernel: {platform.release()}"
             except Exception:
                 return f"Linux - Kernel: {platform.release()}"
-        if os_name == "Darwin":
-            mac_version = platform.mac_ver()[0] or "Unknown"
-            platform_chip = "Apple Silicon" if platform.machine().startswith("arm") else "Intel"
-            return f"macOS {mac_version} - Chip: {platform_chip}"
-        if os_name == "Windows":
+                
+        elif os_name == "Darwin":
+            try:
+                mac_version = platform.mac_ver()[0] or "Unknown"
+                platform_chip = "Apple Silicon" if platform.machine().startswith("arm") else "Intel"
+                return f"macOS {mac_version} - Chip: {platform_chip}"
+            except Exception:
+                return f"macOS - Chip: {platform.machine()}"
+
+        elif os_name == "Windows":
             win_release = platform.release()
             win_build = platform.version()
             edition = None
@@ -363,66 +452,126 @@ def identify_os() -> str:
                     edition = platform.win32_edition()
             except Exception:
                 edition = None
+            # Try to get edition from registry if platform method fails
             if not edition:
-                res = safe_subprocess_run(["systeminfo"], shell=True)
-                if res and res.stdout:
-                    for ln in res.stdout.splitlines():
-                        if "OS Name" in ln:
-                            edition = ln.split(":", 1)[-1].strip()
-                            break
+                try:
+                    import winreg
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+                    edition = winreg.QueryValueEx(key, "ProductName")[0]
+                    winreg.CloseKey(key)
+                except Exception:
+                    edition = None
             if edition:
                 return f"Windows {win_release} ({edition}) [Build {win_build}]"
             return f"Windows {win_release} [Build {win_build}]"
+                
         return f"Unknown Operating System ({os_name})"
+        
     except Exception:
         logger.exception("identify_os failed")
         return "Unknown Operating System"
 
-
-
 def get_cpu_model() -> str:
     """Get CPU model name with several fallbacks."""
     try:
+        # Try platform module first (fastest)
         cpu = platform.processor()
-        if cpu:
-            return cpu
+        if cpu and cpu.strip():
+            return cpu.strip()
+        
         uname_proc = platform.uname().processor
-        if uname_proc:
-            return uname_proc
-        res = safe_subprocess_run(["wmic", "cpu", "get", "name"], shell=True)
-        if res and res.stdout:
-            lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
-            if len(lines) > 1:
-                return lines[1]
-        res = safe_subprocess_run(["lscpu"], shell=True)
-        if res and res.stdout:
-            for ln in res.stdout.splitlines():
-                if ln.lower().startswith("model name:"):
-                    return ln.split(":", 1)[1].strip()
+        if uname_proc and uname_proc.strip():
+            return uname_proc.strip()
+        
+        # Only try subprocess commands if platform methods fail
+        if platform.system() == "Windows":
+            # Use a faster alternative to wmic
+            try:
+                import winreg
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
+                cpu_name = winreg.QueryValueEx(key, "ProcessorNameString")[0]
+                winreg.CloseKey(key)
+                if cpu_name and cpu_name.strip():
+                    return cpu_name.strip()
+            except Exception:
+                pass
+            
+            # Fallback to wmic with shorter timeout
+            res = safe_subprocess_run(["wmic", "cpu", "get", "name"], shell=True, timeout=5)
+            if res and res.stdout:
+                lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+                if len(lines) > 1:
+                    return lines[1]
+        else:
+            # Linux/Unix - try lscpu with shorter timeout
+            res = safe_subprocess_run(["lscpu"], shell=True, timeout=5)
+            if res and res.stdout:
+                for ln in res.stdout.splitlines():
+                    if ln.lower().startswith("model name:"):
+                        return ln.split(":", 1)[1].strip()
+        
         return "Unknown CPU"
     except Exception:
         logger.exception("get_cpu_model failed")
         return "Unknown CPU"
 
-
-
 def get_gpu_info() -> str:
     """Get GPU info with fallbacks (best-effort)."""
     try:
         if platform.system() == "Windows":
-            res = safe_subprocess_run(["wmic", "path", "Win32_VideoController", "get", "Name"], shell=True)
+            # Try registry first (faster than wmic)
+            try:
+                import winreg
+                gpu_names = []
+                try:
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}")
+                    for i in range(winreg.QueryInfoKey(key)[0]):
+                        try:
+                            subkey_name = winreg.EnumKey(key, i)
+                            subkey = winreg.OpenKey(key, subkey_name)
+                            try:
+                                gpu_name = winreg.QueryValueEx(subkey, "Device Description")[0]
+                                if gpu_name and gpu_name.strip():
+                                    gpu_names.append(gpu_name.strip())
+                            except Exception:
+                                pass
+                            winreg.CloseKey(subkey)
+                        except Exception:
+                            continue
+                    winreg.CloseKey(key)
+                    if gpu_names:
+                        return ", ".join(gpu_names)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+            
+            # Fallback to wmic with shorter timeout
+            res = safe_subprocess_run(["wmic", "path", "Win32_VideoController", "get", "Name"], shell=True, timeout=5)
             if res and res.stdout:
                 names = [l.strip() for l in res.stdout.splitlines() if l.strip() and "Name" not in l]
                 if names:
                     return ", ".join(names)
             return "Not available"
         else:
-            res = safe_subprocess_run(["lshw", "-C", "display"], shell=True)
+            # Linux/Unix - try faster alternatives first
+            try:
+                # Try reading from /proc/cpuinfo first (fastest)
+                with open("/proc/cpuinfo", "r") as f:
+                    for line in f:
+                        if line.startswith("model name"):
+                            return line.split(":", 1)[1].strip()
+            except Exception:
+                pass
+            
+            # Fallback to subprocess commands with shorter timeout
+            res = safe_subprocess_run(["lshw", "-C", "display"], shell=True, timeout=5)
             if res and res.stdout:
                 for ln in res.stdout.splitlines():
                     if "product:" in ln.lower():
                         return ln.split(":", 1)[1].strip()
-            res = safe_subprocess_run(["lspci"], shell=True)
+            
+            res = safe_subprocess_run(["lspci"], shell=True, timeout=5)
             if res and res.stdout:
                 for ln in res.stdout.splitlines():
                     if "vga" in ln.lower() or "3d controller" in ln.lower():
@@ -431,7 +580,6 @@ def get_gpu_info() -> str:
     except Exception:
         logger.exception("get_gpu_info failed")
         return "Not available"
-
 
 
 def get_system_info() -> str:
@@ -822,7 +970,6 @@ class SystemInfoDialog(QDialog):
         self.setWindowIcon(QIcon(get_icon_path("bunnypad")))
         self.setup_ui()
 
-    
     def setup_ui(self):
         layout = QVBoxLayout(self)
         title = QLabel(self.tr("System Information"))
@@ -837,9 +984,35 @@ class SystemInfoDialog(QDialog):
             logo.setPixmap(pix)
         layout.addWidget(logo)
 
-        layout.addWidget(QLabel(self.system_info_text))
+        # Add system information as individual labels like CreditsDialog
+        if self.system_info_text:
+            info_lines = self.system_info_text.split('\n')
+            for line in info_lines:
+                if line.strip():
+                    info_label = QLabel(line.strip())
+                    layout.addWidget(info_label)
+
+        # Add OS and directory info like CreditsDialog
         layout.addWidget(QLabel(self.tr("Operating System: ") + self.display_os))
         layout.addWidget(QLabel(self.tr("Installation Directory: ") + self.current_dir))
+        
+        # Add some fun phrases like CreditsDialog
+        phrases = [
+            self.tr("System information gathered with care"),
+            self.tr("Your computer's secrets revealed"),
+            self.tr("Hardware and software in harmony"),
+            self.tr("Digital fingerprints exposed"),
+            self.tr("The machine speaks the truth"),
+            self.tr("Bits and bytes tell the story"),
+            "System specs unveiled",
+            "Hardware detective at work",
+            "Digital forensics complete",
+            "Machine introspection successful"
+        ]
+        random_phrase = random.choice(phrases)
+        layout.addWidget(QLabel(random_phrase))
+        
+        # Center align all widgets like CreditsDialog
         for i in range(layout.count()):
             try:
                 item = layout.itemAt(i)
@@ -1624,11 +1797,18 @@ class Notepad(QMainWindow):
 
     
     def sysinfo(self):
-        system_info_text = get_system_info()
-        display_os_str = identify_os()
-        current_directory_str = os.getcwd()
-        dlg = SystemInfoDialog(system_info_text, display_os_str, current_directory_str)
-        dlg.exec()
+        # Show a loading message first
+        QApplication.processEvents()  # Process any pending events
+        
+        try:
+            system_info_text = get_system_info()
+            display_os_str = identify_os()
+            current_directory_str = os.getcwd()
+            dlg = SystemInfoDialog(system_info_text, display_os_str, current_directory_str)
+            dlg.exec()
+        except Exception as e:
+            logger.exception("sysinfo failed")
+            QMessageBox.critical(self, self.tr("Error"), self.tr(f"Failed to get system information: {str(e)}"))
 
     
     def feature_not_ready(self):
