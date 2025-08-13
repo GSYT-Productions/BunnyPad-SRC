@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-# v11-PyQt6.py - PyQt6 variant with original dialogs preserved (functionally)
+# v11-PyQt5.py - PyQt5 variant
 r"""
-BunnyPad v11 - PyQt6 variant (dialogs preserved from original)
+ ____                          ____           _ 
+| __ ) _   _ _ __  _ __  _   _|  _ \ __ _  __| |
+|  _ \| | | | '_ \| '_ \| | | | |_) / _` |/ _` |
+| |_) | |_| | | | | | | | |_| |  __/ (_| | (_| |
+|____/ \__,_|_| |_|_| |_|\__, |_|   \__,_|\__,_|
+                         |___/                  
 """
 
 import datetime
@@ -959,6 +964,8 @@ class AboutDialog(QDialog):
         msg_box.exec()
 
 
+# nice job for paying attention :D
+
 class SystemInfoDialog(QDialog):
     
     def __init__(self, system_info_text: str, display_os_str: str, current_directory_str: str, *args, **kwargs):
@@ -1020,7 +1027,6 @@ class SystemInfoDialog(QDialog):
                     item.widget().setAlignment(Qt.AlignmentFlag.AlignHCenter)
             except Exception:
                 pass
-
 
 class CreditsDialog(QDialog):
     
