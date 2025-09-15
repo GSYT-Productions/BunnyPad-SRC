@@ -21,6 +21,9 @@ import textwrap
 import unicodedata
 import webbrowser
 import random
+import json
+import base64
+import binascii
 from pathlib import Path
 
 # Optional third-party libraries
@@ -44,7 +47,7 @@ try:
 except Exception:
     FPDF = None
 
-# PyQt6 imports
+# PyQt5 imports
 try:
     from PyQt5.QtCore import (
         QCoreApplication,
@@ -54,9 +57,10 @@ try:
         Qt,
         QTextStream,
         QThread,
-        pyqtSignal,
-        pyqtSlot,
+		QTimer
     )
+    from PyQt5.QtCore import pyqtSignal as Signal
+    from PyQt5.QtCore import pyqtSlot as Slot
     from PyQt5.QtGui import (
         QColor,
         QFont,
@@ -96,7 +100,16 @@ try:
         QToolTip,
         QVBoxLayout,
         QWidget,
+        QGroupBox,
+        QFormLayout,
+        QComboBox,
+        QSpinBox,
+        QLineEdit,
+        QHBoxLayout,
+        QSizePolicy,
+        QSplitter
     )
+
 except ImportError as e:
     print(f"Missing required dependency: {e}")
     print("Attempting to install dependencies...")
@@ -123,7 +136,7 @@ except ImportError as e:
         try:
             subprocess.run([
                 pip_cmd, "install", "--no-cache-dir",
-                "PyQt5", "distro", "fpdf", "psutil", "setuptools", "requests"
+                "PyQt5", "distro", "fpdf", "psutil", "setuptools", "requests", "elevate", "pyperclip", "cryptography"
             ], check=True)
         except subprocess.CalledProcessError as e:
             print(f"Failed to install dependencies: {e}")
@@ -167,7 +180,7 @@ except ImportError as e:
             try:
                 subprocess.run([
                     "pipx", "install", "PyQt5", "distro", "fpdf", 
-                    "psutil", "setuptools", "requests"
+                    "psutil", "setuptools", "requests", "elevate", "pyperclip", "cryptography"
                 ], check=True)
             except subprocess.CalledProcessError:
                 print("Warning: pipx installation failed. Attempting venv...")
@@ -191,16 +204,50 @@ except ImportError as e:
         else:
             print("Error: Failed to create virtual environment.")
             sys.exit(1)
+try:
+    import pyperclip
+    CLIPBOARD_ENABLED = True
+except ImportError:
+    CLIPBOARD_ENABLED = False
+try:
+    from cryptography.hazmat.primitives import padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+except ImportError:
+    print("Cryptography package not found. Install with: pip install cryptography")
+    sys.exit(1)
+
 # --------------------
 # Constants and paths
 # --------------------
-CURRENT_VERSION = "v11.0.27000.0809"
+CURRENT_VERSION = "v11.0.27000.0915"
 APP_NAME = "BunnyPad"
 ORGANIZATION_NAME = "GSYT Productions"
 REPO_OWNER = "GSYT-Productions"
 REPO_NAME = "BunnyPad-SRC"
+BUNNYPAD_TEMP = os.path.join(os.path.expanduser("~"), "BunnyPadTemp")
+os.makedirs(BUNNYPAD_TEMP, exist_ok=True)
+STATE_FILE = os.path.join(BUNNYPAD_TEMP, "state.json")
+DIRTY_FILE = os.path.join(BUNNYPAD_TEMP, "dirty")
 
-SCRIPT_DIR = Path(__file__).parent.resolve()
+# ---------------- Crypto Engine ----------------
+GERMAN_MARKER = "§"
+GERMAN_WORDS = [
+    "dost", "orden", "meer", "baum", "vogel", "fluss", "himmel", "freude",
+    "licht", "schloss", "apfel", "garten", "wasser", "freund", "blume", "straße",
+    "morgen", "nacht", "sonne", "mond", "stern", "eule", "hausaufgabe", "katze",
+    "wolke", "freundlich", "schnell", "langsam", "laut", "ruhig", "schön",
+    "schlecht", "freundschaft", "abenteuer", "trinken", "laufen", "springen",
+    "tanzen", "schreiben", "musizieren", "singen", "fühlen", "träumen", "denken"
+]
+
+if getattr(sys, 'frozen', False):
+    # Running as a PyInstaller bundled executable
+    SCRIPT_DIR = Path(sys.executable).parent
+else:
+    # Running as a normal Python script
+    SCRIPT_DIR = Path(__file__).parent.resolve()
+
 IMAGES_DIR = SCRIPT_DIR / "images"
 
 ICON_PATHS = {
@@ -234,6 +281,9 @@ ICON_PATHS = {
     "update": str(IMAGES_DIR / "update.png"),
     "pdf": str(IMAGES_DIR / "pdf.png"),
     "printer": str(IMAGES_DIR / "printer.png"),
+    "encryption": str(IMAGES_DIR / "encryption.png"),
+    "status": str(IMAGES_DIR / "status.png"),
+    "toolbar": str(IMAGES_DIR / "toolbar.png")
 }
 
 FILE_FILTERS = {
@@ -301,8 +351,6 @@ def get_icon_path(icon_name: str) -> str:
     # fallback to empty
     return ""
 
-
-
 def load_stylesheet() -> str:
     """Load stylesheet.qss if present."""
     path = SCRIPT_DIR / "stylesheet.qss"
@@ -318,6 +366,16 @@ def load_stylesheet() -> str:
     except Exception:
         logger.exception("Failed loading stylesheet")
     return ""
+
+
+def parse_rccm_file(filepath):
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            hexdata = f.read().strip()
+        decoded_json = bytes.fromhex(hexdata).decode("utf-8")
+        return json.loads(decoded_json)
+    except Exception:
+        return None
 
 
 
@@ -620,8 +678,8 @@ def get_system_info() -> str:
         return "System information not available"
 
 class CharacterWidget(QWidget):
-    characterSelected = pyqtSignal(str)
-    closed = pyqtSignal()  # new signal to notify when window closes
+    characterSelected = Signal(str)
+    closed = Signal()  # new signal to notify when window closes
 
     
     def __init__(self, parent=None, as_window=False):
@@ -634,7 +692,8 @@ class CharacterWidget(QWidget):
         self.last_key = -1
         self.setMouseTracking(True)
         self._as_window = as_window
-
+        if self._as_window:
+            self.setObjectName("FloatingWindow")
         # Unicode ranges
         self.unicode_ranges = {
             "Basic Latin": (0x0020, 0x007F),
@@ -644,6 +703,7 @@ class CharacterWidget(QWidget):
             "Geometric Shapes": (0x25A0, 0x25FF),
             "Dingbats": (0x2700, 0x27BF),
         }
+
         self.current_range_name = "Basic Latin"
         self.start_codepoint, self.end_codepoint = self.unicode_ranges[self.current_range_name]
         self.total_characters = self.end_codepoint - self.start_codepoint + 1
@@ -753,7 +813,7 @@ class CharacterWidget(QWidget):
     
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.fillRect(event.rect(), QColor("white"))
+        painter.fillRect(event.rect(), QColor(50, 50, 50, 50))  # semi-translucent tint
         painter.setFont(self.display_font)
         fm = QFontMetrics(self.display_font)
 
@@ -770,7 +830,10 @@ class CharacterWidget(QWidget):
             x = col * self.square_size
             painter.drawLine(x, 0, x, ((self.total_characters + self.columns - 1) // self.columns) * self.square_size)
 
-        painter.setPen(QColor("black"))
+        painter.setPen(QColor("white"))
+        font = QFont(self.display_font)
+        font.setBold(True)
+        painter.setFont(font)
         for row in range(begin_row, end_row + 1):
             for col in range(begin_col, end_col + 1):
                 idx = row * self.columns + col
@@ -906,7 +969,7 @@ class AboutDialog(QDialog):
                 "\"so they turn to these novels about non-existent people. \"\n"
                 "\"Or worse, philosophers. \\n\"\n"
                 "\"Look, here's Spinoza. One expert screaming down another expert's throat. \"\n"
-                "\"\\\"We have free will. No, all of our actions are predetermined.\\\" \\n\"\n"
+                "\"\\\"We have free will. No, all of our actions are predetermined.\\\" \"\n"
                 "\"Each one says the opposite, and a man comes away lost, \"\n"
                 "\"feeling more bestial and lonely than before. \\n\"\n"
                 "\"Now, if you don't want a person unhappy, you don't give them \"\n"
@@ -935,7 +998,6 @@ class AboutDialog(QDialog):
             )
         )
 
-        layout.addWidget(QLabel(self.tr("::WARNING:: This is an unstable build. There will be bugs.")))
         layout.addWidget(QLabel(self.tr("You are running BunnyPad on ") + self.display_os))
         layout.addWidget(QLabel(self.tr("BunnyPad is installed at ") + self.current_dir))
 
@@ -1000,7 +1062,6 @@ class SystemInfoDialog(QDialog):
                     layout.addWidget(info_label)
 
         # Add OS and directory info like CreditsDialog
-        layout.addWidget(QLabel(self.tr("Operating System: ") + self.display_os))
         layout.addWidget(QLabel(self.tr("Installation Directory: ") + self.current_dir))
         
         # Add some fun phrases like CreditsDialog
@@ -1011,10 +1072,10 @@ class SystemInfoDialog(QDialog):
             self.tr("Digital fingerprints exposed"),
             self.tr("The machine speaks the truth"),
             self.tr("Bits and bytes tell the story"),
-            "System specs unveiled",
-            "Hardware detective at work",
-            "Digital forensics complete",
-            "Machine introspection successful"
+            self.tr("System specs unveiled"),
+            self.tr("Hardware detective at work"),
+            self.tr("Digital forensics complete"),
+            self.tr("Machine introspection successful")
         ]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
@@ -1115,18 +1176,24 @@ class FeatureNotReady(QDialog):
         )
         message.setWordWrap(True)
         layout.addWidget(message)
-
+        for i in range(layout.count()):
+            try:
+                item = layout.itemAt(i)
+                if item and item.widget():
+                    item.widget().setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            except Exception:
+                pass
         ok_button = QPushButton(self.tr("OK"))
         ok_button.clicked.connect(self.accept)
         layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
     
     def activate_null_easter_egg(self, event):
-        null = self.tr("No easter egg here... or is there?")
+        gastertext = "❄︎☟︎☜︎ ☹︎✌︎👌︎📬︎📬︎📬︎ ✋︎❄︎ 🕈︎☟︎✋︎💧︎🏱︎☜︎☼︎💧︎📬︎📬︎📬︎ ☟︎⚐︎🕈︎ ✋︎☠︎❄︎☜︎☼︎☜︎💧︎❄︎✋︎☠︎☝︎📬︎📬︎📬︎" # THE LAB... IT WHISPERS... HOW INTERESTING...
         msg_box = QMessageBox(self)
         msg_box.setWindowIcon(QIcon(get_icon_path("bunnypad")))
-        msg_box.setWindowTitle(self.tr("Null"))
-        msg_box.setText(null)
+        msg_box.setWindowTitle("🕈︎📬︎👎︎📬︎ ☝︎✌︎💧︎❄︎☜︎☼︎") # W.D. GASTER
+        msg_box.setText(gastertext)
         msg_box.exec()
 
 
@@ -1251,10 +1318,12 @@ class DownloadOptions(QDialog):
         button_names = {
             "Latest Stable Release": "Latest Stable Release",
             "Latest Stable Source": "Latest Stable Source",
-            "Latest CarrotPatch Build": "Latest CarrotPatch Build",
-            "IconPacks": "IconPacks",
-            "Stylesheets": "Stylesheets",
+            "BunnyPad Donation": "BunnyPad Donation",
+            "Customizer": "Customizer",
+            "Tech Stuff Website": "Tech Stuff Website",
             "r3dfox Download": "r3dfox Download",
+            "Donate to Tech Stuff": "Donate to Tech Stuff",
+            "Join our Discord": "Join our Discord",
         }
 
         row, col = 0, 0
@@ -1274,7 +1343,7 @@ class DownloadOptions(QDialog):
         self.lcd_number = QLCDNumber()
         self.lcd_number.setSegmentStyle(QLCDNumber.SegmentStyle.Flat)
         self.lcd_number.setDigitCount(5)
-        self.lcd_number.display(42069)
+        self.lcd_number.display(27000)
         main_layout.addWidget(self.lcd_number)
 
         close_button = QPushButton("Close")
@@ -1290,20 +1359,26 @@ class DownloadOptions(QDialog):
         webbrowser.open("https://github.com/GSYT-Productions/BunnyPad-SRC/")
 
     
-    def on_latest_carrotpatch_build_clicked(self):
-        webbrowser.open("https://github.com/GSYT-Productions/BunnyPad-SRC/")
+    def on_bunnypad_donation_clicked(self):
+        webbrowser.open("https://throne.com/bunnypad")
 
     
-    def on_iconpacks_clicked(self):
-        webbrowser.open("https://gsyt-productions.github.io/BunnyPadCustomizer/IconPacks")
+    def on_customizer_clicked(self):
+        webbrowser.open("https://gsyt-productions.github.io/BunnyPadCustomizer/")
 
     
-    def on_stylesheets_clicked(self):
-        webbrowser.open("https://gsyt-productions.github.io/BunnyPadCustomizer/stylesheets")
+    def on_tech_stuff_website_clicked(self):
+        webbrowser.open("https://teknixstuff.com")
 
     
     def on_r3dfox_download_clicked(self):
         webbrowser.open("https://github.com/Eclipse-Community/r3dfox/releases/")
+
+    def on_donate_to_tech_stuff_clicked(self):
+        webbrowser.open("https://teknixstuff.com/Network/Donate/")
+
+    def on_join_our_discord_clicked(self):
+        webbrowser.open("https://discord.gg/w7ls")
 
 
 class alan_walker_wia_egg(QDialog):
@@ -1352,7 +1427,7 @@ class alan_walker_wia_egg(QDialog):
 # Update checker / downloader (threaded)
 # --------------------
 class update_checker(QThread):
-    update_check_completed = pyqtSignal(dict)
+    update_check_completed = Signal(dict)
 
     
     def __init__(self, repo_owner=REPO_OWNER, repo_name=REPO_NAME, use_pre_release=False):
@@ -1391,6 +1466,393 @@ class update_checker(QThread):
             self.update_check_completed.emit({})
 
 # --------------------
+# Cryptography Engine
+# --------------------
+class CryptoEngine:
+    def __init__(self):
+        self.german_marker = GERMAN_MARKER
+        self.german_words = GERMAN_WORDS.copy()
+
+    # ---- Caesar ----
+    @staticmethod
+    def caesar_cipher(text, shift):
+        result = ""
+        for char in text:
+            if char.isalpha():
+                offset = 65 if char.isupper() else 97
+                result += chr((ord(char) - offset + shift) % 26 + offset)
+            else:
+                result += char
+        return result
+
+    @staticmethod
+    def caesar_decipher(text, shift):
+        return CryptoEngine.caesar_cipher(text, -shift)
+
+    # ---- Hex/Base64 ----
+    @staticmethod
+    def hex_encode(text):
+        return text.encode("utf-8").hex()
+
+    @staticmethod
+    def hex_decode(text):
+        return bytes.fromhex(text).decode("utf-8")
+
+    @staticmethod
+    def base64_encode(text):
+        return base64.b64encode(text.encode("utf-8")).decode("utf-8")
+
+    @staticmethod
+    def base64_decode(text):
+        return base64.b64decode(text).decode("utf-8")
+
+    # ---- AES ----
+    @staticmethod
+    def valid_aes_key(key):
+        return len(key) in (16, 24, 32)
+
+    @staticmethod
+    def aes_encrypt(plaintext, key):
+        if not CryptoEngine.valid_aes_key(key):
+            raise ValueError("AES key must be 16, 24, or 32 characters long")
+        key_bytes = key.encode()
+        iv = os.urandom(16)
+        cipher = Cipher(algorithms.AES(key_bytes), modes.CBC(iv), backend=default_backend())
+        padder = padding.PKCS7(128).padder()
+        padded = padder.update(plaintext.encode()) + padder.finalize()
+        encryptor = cipher.encryptor()
+        enc = encryptor.update(padded) + encryptor.finalize()
+        return base64.b64encode(iv + enc).decode("utf-8")
+
+    @staticmethod
+    def aes_decrypt(ciphertext, key):
+        if not CryptoEngine.valid_aes_key(key):
+            raise ValueError("AES key must be 16, 24, or 32 characters long")
+        raw = base64.b64decode(ciphertext)
+        iv, ct = raw[:16], raw[16:]
+        cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(ct) + decryptor.finalize()
+        unpadder = padding.PKCS7(128).unpadder()
+        return (unpadder.update(padded) + unpadder.finalize()).decode()
+
+    # ---- German words insertion ----
+    def insert_german_words(self, text, interval):
+        if not interval or interval < 1:
+            return text
+        words = text.split()
+        result = []
+        for i, word in enumerate(words):
+            result.append(word)
+            if (i + 1) % interval == 0:
+                result.append(self.german_marker + self.german_words[(i // interval) % len(self.german_words)])
+        return ' '.join(result)
+
+    def remove_german_words(self, text):
+        return ' '.join(word for word in text.split() if not word.startswith(self.german_marker))
+
+    # ---- Pipelines ----
+    def encrypt_pipeline(self, text, shift, key, interval):
+        step1 = self.insert_german_words(text, interval)
+        step2 = self.caesar_cipher(step1, shift)
+        step3 = self.hex_encode(step2)
+        step4 = self.base64_encode(step3)
+        encrypted = self.aes_encrypt(step4, key)
+        debug_steps = {
+            'Inserted German Words': step1,
+            'Caesar Cipher': step2,
+            'Hex Encoded': step3,
+            'Base64 Encoded': step4,
+            'AES Encrypted': encrypted
+        }
+        return encrypted, debug_steps
+
+    def decrypt_pipeline(self, text, shift, key, interval):
+        try:
+            step1 = self.aes_decrypt(text, key)
+            step2 = self.base64_decode(step1)
+            step3 = self.hex_decode(step2)
+            step4 = self.caesar_decipher(step3, shift)
+            clean = self.remove_german_words(step4)
+            debug_steps = {
+                'AES Decrypted': step1,
+                'Base64 Decoded': step2,
+                'Hex Decoded': step3,
+                'Caesar Deciphered': step4,
+                'Cleaned Text': clean
+            }
+            return clean, debug_steps
+        except Exception as e:
+            return f"[!] Decryption error: {e}", {}
+
+# --------------------
+# Cryptography GUI
+# --------------------
+class CryptoGUI(QWidget):
+    def __init__(self, parent=None, as_window=False):
+        flags = Qt.Window if as_window else Qt.Widget
+        super().__init__(parent, flags)
+        self.setObjectName("CryptoGUI")  # for targeted styling
+        self.engine = CryptoEngine()
+        self.setWindowTitle("RCCMITOWOATAS Encryption Tool")
+        icon = get_icon_path("bunnypad")
+        if icon:
+            self.setWindowIcon(QIcon(icon))
+        # self.setGeometry(300, 300, 700, 600)
+        self.init_ui()
+
+    def init_ui(self):
+        # Cross-version enum aliases for QSizePolicy
+        try:
+            SP_Expanding = QSizePolicy.Policy.Expanding
+            SP_Fixed = QSizePolicy.Policy.Fixed
+        except AttributeError:
+            SP_Expanding = QSizePolicy.Expanding
+            SP_Fixed = QSizePolicy.Fixed
+
+        dpi = QGuiApplication.primaryScreen().logicalDotsPerInch() / 96.0
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(int(10*dpi), int(10*dpi), int(10*dpi), int(10*dpi))
+        main_layout.setSpacing(int(8*dpi))
+
+        # ===== SETTINGS & OPTIONS =====
+        settings_group = QGroupBox("Settings")
+        settings_outer_layout = QVBoxLayout()
+        settings_outer_layout.setSpacing(int(6*dpi))
+
+        # --- Grid Layout for settings ---
+        settings_grid = QGridLayout()
+        settings_grid.setSpacing(int(6*dpi))
+
+        # Controls
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(["Encrypt", "Decrypt"])
+
+        self.shift_spin = QSpinBox()
+        self.shift_spin.setRange(-25, 25)
+        self.shift_spin.setValue(3)
+
+        self.interval_spin = QSpinBox()
+        self.interval_spin.setRange(1, 10)
+        self.interval_spin.setValue(2)
+
+        self.key_box = QLineEdit()
+        self.key_box.setPlaceholderText("AES key (16, 24, or 32 chars)")
+
+        for w in (self.mode_combo, self.shift_spin, self.interval_spin, self.key_box):
+            w.setSizePolicy(SP_Expanding, SP_Fixed)
+            w.setMinimumHeight(int(26*dpi))
+
+        # Row 0: Mode + Shift + Word Interval
+        settings_grid.addWidget(QLabel("Mode:"), 0, 0)
+        settings_grid.addWidget(self.mode_combo, 0, 1)
+        settings_grid.addWidget(QLabel("Caesar Shift:"), 0, 2)
+        settings_grid.addWidget(self.shift_spin, 0, 3)
+        settings_grid.addWidget(QLabel("Word Interval:"), 0, 4)
+        settings_grid.addWidget(self.interval_spin, 0, 5)
+
+        # Row 1: AES Key + Options
+        settings_grid.addWidget(QLabel("AES Key:"), 1, 0)
+        settings_grid.addWidget(self.key_box, 1, 1, 1, 3)
+
+        # Options group — checkboxes in a single line
+        options_group = QGroupBox("Options")
+        options_layout = QHBoxLayout()
+        options_layout.setSpacing(int(10*dpi))
+
+        self.critical_check = QCheckBox("Copy output to clipboard")
+        self.verbose_check = QCheckBox("Show debug")
+
+        options_layout.addWidget(self.critical_check)
+        options_layout.addWidget(self.verbose_check)
+        options_layout.addStretch(1)
+
+        options_group.setLayout(options_layout)
+        settings_grid.addWidget(options_group, 1, 4, 1, 2)
+
+        settings_outer_layout.addLayout(settings_grid)
+        settings_group.setLayout(settings_outer_layout)
+        main_layout.addWidget(settings_group)
+
+        # ===== FILE OPERATIONS =====
+        file_group = QGroupBox("File Operations")
+        file_layout = QHBoxLayout()
+        file_layout.setSpacing(int(6*dpi))
+
+        self.import_btn = QPushButton("Import .rccm File")
+        self.export_btn = QPushButton("Export .rccm File")
+        file_layout.addWidget(self.import_btn)
+        file_layout.addWidget(self.export_btn)
+        file_group.setLayout(file_layout)
+        main_layout.addWidget(file_group)
+
+        # ===== SPLITTER FOR MAIN AREAS =====
+        splitter = QSplitter(Qt.Vertical)
+
+        # --- Input section ---
+        input_widget = QWidget()
+        input_layout = QVBoxLayout(input_widget)
+        input_layout.setContentsMargins(0, 0, 0, 0)
+        input_layout.addWidget(QLabel("Input / Cipher Text:"))
+        self.input_box = QTextEdit()
+        input_layout.addWidget(self.input_box)
+        btn_row = QHBoxLayout()
+        self.go_btn = QPushButton("Run")
+        self.copy_btn = QPushButton("Copy Output")
+        btn_row.addWidget(self.go_btn)
+        btn_row.addWidget(self.copy_btn)
+        input_layout.addLayout(btn_row)
+
+        # --- Output section ---
+        output_widget = QWidget()
+        output_layout = QVBoxLayout(output_widget)
+        output_layout.setContentsMargins(0, 0, 0, 0)
+        output_layout.addWidget(QLabel("Output:"))
+        self.output_box = QTextEdit()
+        self.output_box.setReadOnly(True)
+        output_layout.addWidget(self.output_box)
+
+        # --- Debug section ---
+        debug_widget = QWidget()
+        debug_layout = QVBoxLayout(debug_widget)
+        debug_layout.setContentsMargins(0, 0, 0, 0)
+        debug_layout.addWidget(QLabel("Debug Information:"))
+        self.debug_box = QTextEdit()
+        self.debug_box.setReadOnly(True)
+        debug_layout.addWidget(self.debug_box)
+
+        splitter.addWidget(input_widget)
+        splitter.addWidget(output_widget)
+        splitter.addWidget(debug_widget)
+        splitter.setSizes([200, 150, 0])  # Debug starts hidden
+
+        main_layout.addWidget(splitter)
+        self.setLayout(main_layout)
+
+        # ===== DEBUG VISIBILITY TOGGLE =====
+        def toggle_debug(checked):
+            if checked:
+				# QMessageBox.information(self, "Debugging the Debugger", "[Show] toggle request acknowledged")
+                self.debug_box.show()
+                splitter.setSizes([200, 150, 100])
+            else:
+                # QMessageBox.information(self, "Debugging the Debugger", "[Hide] toggle request acknowledged")
+                self.debug_box.hide()
+                splitter.setSizes([200, 150, 0])
+
+        self.debug_box.hide()
+        self.verbose_check.stateChanged.connect(lambda state: toggle_debug(state == Qt.Checked))
+
+    # ---- UI Handlers ----
+    def on_mode_changed(self):
+        self.input_box.clear()
+        self.output_box.clear()
+        self.debug_box.clear()
+        self.key_box.clear()
+        self.copy_btn.setEnabled(False)
+        self.critical_check.setChecked(False)
+        self.verbose_check.setChecked(False)
+        self.shift_spin.setValue(3)
+        self.interval_spin.setValue(2)
+        self.update_import_export_visibility()
+
+    def update_import_export_visibility(self):
+        mode = self.mode_combo.currentText().lower()
+        self.import_btn.setVisible(mode == "decrypt")
+        self.export_btn.setVisible(mode == "encrypt")
+
+    def import_rccm_file(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open RCCM File", "", "RCCM Files (*.rccm)")
+        if not filepath:
+            return
+        config = parse_rccm_file(filepath)
+        if not config:
+            QMessageBox.warning(self, "Error", "Failed to parse the selected .rccm file.")
+            return
+        self.mode_combo.setCurrentText("Decrypt")
+        self.shift_spin.setValue(config.get("caesar_shift", 0))
+        self.interval_spin.setValue(config.get("german_interval", 2))
+        self.output_box.setText(config.get("encrypted", ""))
+        self.copy_btn.setEnabled(True)
+        QMessageBox.information(self, "Import Successful", f"Imported {os.path.basename(filepath)}\nEnter your AES key and press Run to decrypt.")
+
+    def export_rccm_file(self):
+        encrypted_message = self.output_box.toPlainText().strip()
+        if not encrypted_message:
+            self.show_error("No encrypted output to export.")
+            return
+        key = self.key_box.text().strip()
+        if not CryptoEngine.valid_aes_key(key):
+            self.show_error("AES key must be exactly 16, 24, or 32 characters long to export config.")
+            return
+        config_data = {
+            "encrypted": encrypted_message,
+            "caesar_shift": self.shift_spin.value(),
+            "aes_key_length": len(key),
+            "german_interval": self.interval_spin.value(),
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        hex_data = json.dumps(config_data, indent=2).encode("utf-8").hex()
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save RCCM Configuration File", "", "RCCM Files (*.rccm)")
+        if filepath:
+            if not filepath.lower().endswith(".rccm"):
+                filepath += ".rccm"
+            try:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(hex_data)
+                QMessageBox.information(self, "Export Successful", f"Configuration exported to:\n{filepath}")
+            except Exception as e:
+                self.show_error(f"Failed to write file:\n{e}")
+
+    def run_crypto(self):
+        text = self.input_box.toPlainText().strip()
+        key = self.key_box.text().strip()
+        shift = self.shift_spin.value()
+        interval = self.interval_spin.value()
+        mode = self.mode_combo.currentText().lower()
+        verbose = self.verbose_check.isChecked()
+        if mode == "decrypt" and not text and self.output_box.toPlainText().strip():
+            text = self.output_box.toPlainText().strip()
+        if not text:
+            self.show_error("Input text/cipher is required.")
+            return
+        if not CryptoEngine.valid_aes_key(key):
+            self.show_error("AES key must be exactly 16, 24, or 32 characters long.")
+            return
+        if mode == 'encrypt':
+            output_text, debug_info = self.engine.encrypt_pipeline(text, shift, key, interval)
+        else:
+            output_text, debug_info = self.engine.decrypt_pipeline(text, shift, key, interval)
+        self.output_box.setText(output_text)
+        self.copy_btn.setEnabled(True)
+        self.debug_box.setVisible(verbose)
+        if verbose:
+            debug_lines = [f"[{k}]: {v}" for k, v in debug_info.items()]
+            self.debug_box.setText("\n\n".join(debug_lines))
+        else:
+            self.debug_box.clear()
+        if self.critical_check.isChecked():
+            if CLIPBOARD_ENABLED:
+                pyperclip.copy(output_text)
+                QMessageBox.information(self, "Clipboard", "Output copied to clipboard.")
+            else:
+                QMessageBox.warning(self, "Clipboard", "pyperclip not installed; clipboard functionality disabled.")
+
+    def copy_output(self):
+        if CLIPBOARD_ENABLED:
+            text = self.output_box.toPlainText()
+            if text:
+                pyperclip.copy(text)
+                QMessageBox.information(self, "Clipboard", "Output copied to clipboard.")
+            else:
+                self.show_error("No output text to copy.")
+        else:
+            QMessageBox.warning(self, "Clipboard", "pyperclip not installed; clipboard functionality disabled.")
+
+    def show_error(self, message):
+        QMessageBox.critical(self, "Error", message)
+# --------------------
 # Main Notepad (kept compatible)
 # --------------------
 class Notepad(QMainWindow):
@@ -1403,14 +1865,31 @@ class Notepad(QMainWindow):
             self.setWindowIcon(QIcon(icon))
         self.resize(900, 700)
 
+        # --- File state and flags ---
         self.file_path = None
         self.unsaved_changes_flag = False
         self.update_thread = None
+
+        # --- Mark session dirty on startup ---
+        open(DIRTY_FILE, "w").close()
+
+
+        # --- Auto-save timer ---
+        self.autoSaveTimer = QTimer(self)
+        self.autoSaveTimer.timeout.connect(self.autoSave)
+        self.autoSaveTimer.start(10000)
 
         # central text edit
         self.textedit = QTextEdit()
         self.textedit.setAcceptRichText(False)
         self.setCentralWidget(self.textedit)
+
+        # --- Connect modification signal ---
+        self.textedit.document().modificationChanged.connect(self.onModificationChanged)
+
+        # --- Restore session if dirty ---
+        if os.path.exists(DIRTY_FILE):
+            self.restoreSession()
 
         # menus / toolbar / status
         self.create_actions_and_menus()
@@ -1425,6 +1904,17 @@ class Notepad(QMainWindow):
         self.character_dock = QDockWidget(QCoreApplication.translate("MainWindow", "Character Map"), self)
         self.character_dock.setWidget(self.character_map)
         self.character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
+        # 🔹 Theme toggling for dock when floating / docked
+        def _char_dock_theme(floating):
+            if floating:
+                self.character_dock.setObjectName("FloatingWindow")
+            else:
+                self.character_dock.setObjectName("")
+            # Force QSS re‑evaluation
+            self.character_dock.style().unpolish(self.character_dock)
+            self.character_dock.style().polish(self.character_dock)
+            self.character_dock.update()
+        self.character_dock.topLevelChanged.connect(_char_dock_theme)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.character_dock)
         self.character_dock.hide()
 
@@ -1525,13 +2015,6 @@ class Notepad(QMainWindow):
 
         edit_menu.addSeparator()
 
-        toggle_character_map_action = QAction(QIcon(get_icon_path("charmap")), self.tr("Character Map"), self)
-        toggle_character_map_action.setCheckable(True)
-        toggle_character_map_action.setShortcut("Ctrl+M")
-        toggle_character_map_action.toggled.connect(self.toggle_character_map)
-        edit_menu.addAction(toggle_character_map_action)
-        self._toggle_character_map_action = toggle_character_map_action
-
         find_action = QAction(QIcon(get_icon_path("find")), self.tr("Find..."), self)
         find_action.setShortcut("Ctrl+F")
         find_action.triggered.connect(self.find_function)
@@ -1574,17 +2057,34 @@ class Notepad(QMainWindow):
         view_menu = QMenu(self.tr("View"), self)
         menubar.addMenu(view_menu)
 
-        statusbar_action = QAction(self.tr("Show statusbar"), self, checkable=True)
+        statusbar_action = QAction(QIcon(get_icon_path("status")), self.tr("Show statusbar"), self, checkable=True)
         statusbar_action.setChecked(True)
         statusbar_action.setShortcut("Alt+Shift+S")
         statusbar_action.triggered.connect(self.toggle_statusbar)
         view_menu.addAction(statusbar_action)
 
-        toolbar_action = QAction("Toolbar", self, checkable=True)
+        toolbar_action = QAction(QIcon(get_icon_path("toolbar")), "Toolbar", self, checkable=True)
         toolbar_action.setChecked(True)
         toolbar_action.setShortcut("Alt+T")
         toolbar_action.triggered.connect(self.toggle_toolbar)
         view_menu.addAction(toolbar_action)
+
+        #Add Tools Menu
+        tools_menu = QMenu(self.tr("Tools"), self)
+        menubar.addMenu(tools_menu)
+
+        #Add starting point for RCCMITOWOATAS addition
+        rcc_action = QAction(QIcon(get_icon_path("encryption")), self.tr("Text Encryption Tool"), self)
+        rcc_action.triggered.connect(self.crypto_tool)
+        tools_menu.addAction(rcc_action)
+
+        # Move Charmap to Tools menu
+        toggle_character_map_action = QAction(QIcon(get_icon_path("charmap")), self.tr("Character Map"), self)
+        toggle_character_map_action.setCheckable(True)
+        toggle_character_map_action.setShortcut("Ctrl+M")
+        toggle_character_map_action.toggled.connect(self.toggle_character_map)
+        tools_menu.addAction(toggle_character_map_action)
+        self._toggle_character_map_action = toggle_character_map_action
 
         # Help menu
         help_menu = QMenu(self.tr("Help"), self)
@@ -1628,6 +2128,15 @@ class Notepad(QMainWindow):
         # toolbar
         self.toolbar = QToolBar(self)
         self.toolbar.setMovable(True)
+        def _toolbar_theme(floating: bool):
+            # Set the objectName so QSS can style it dynamically
+            self.toolbar.setObjectName("FloatingWindow" if floating else "")
+            # Force QSS to re‑apply immediately
+            self.toolbar.style().unpolish(self.toolbar)
+            self.toolbar.style().polish(self.toolbar)
+            self.toolbar.update()
+        # Connect the signal so this runs whenever the toolbar is floated/docked
+        self.toolbar.topLevelChanged.connect(_toolbar_theme)
         self.addToolBar(self.toolbar)
         self.toolbar.addAction(new_action)
         self.toolbar.addAction(open_action)
@@ -1643,13 +2152,13 @@ class Notepad(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(find_action)
         self.toolbar.addAction(replace_action)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(cake_action)
+        # self.toolbar.addSeparator()
         self.toolbar.addSeparator()
         self.toolbar.addAction(font_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(toggle_character_map_action)
-
+        self.toolbar.addAction(rcc_action)
+        self.toolbar.addAction(cake_action)
     # File operations
     
     def new_file(self):
@@ -1664,17 +2173,41 @@ class Notepad(QMainWindow):
         if self.unsaved_changes_flag:
             if not self.warn_unsaved_changes():
                 return
+
         file_types = FILE_FILTERS["open"]
         path, _ = QFileDialog.getOpenFileName(self, self.tr("Open File"), "", file_types)
-        if path:
-            try:
-                with open(path, "r", encoding="utf-8", errors="replace") as f:
-                    self.textedit.setPlainText(f.read())
-                self.file_path = path
-                self.unsaved_changes_flag = False
-                self.setWindowTitle(f"{os.path.basename(path)} - BunnyPad")
-            except Exception:
-                QMessageBox.critical(self, self.tr("Error"), self.tr("Unicode Error: Cannot open file"))
+        if not path:
+            return
+
+        # Temporary safeguard: 10 MB hard cap to prevent resource-exhaustion DoS
+        MAX_SAFE_SIZE = 10 * 1024 * 1024  # 10 MB
+        try:
+            file_size = os.path.getsize(path)
+        except Exception:
+            QMessageBox.critical(self, self.tr("Error"), self.tr("Cannot determine file size."))
+            return
+
+        if file_size > MAX_SAFE_SIZE:
+            QMessageBox.warning(
+                self,
+                self.tr("File too large"),
+                self.tr(
+                    "This file exceeds 10 MB and cannot be opened safely.\n"
+                    "This is a temporary safeguard against a reported resource-exhaustion vulnerability."
+                )
+            )
+            return
+
+        # Safe to open
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                self.textedit.setPlainText(f.read())
+            self.file_path = path
+            self.unsaved_changes_flag = False
+            self.setWindowTitle(f"{os.path.basename(path)} - BunnyPad")
+        except Exception:
+            QMessageBox.critical(self, self.tr("Error"), self.tr("Unicode Error: Cannot open file"))
+    
 
     
     def warn_unsaved_changes(self) -> bool:
@@ -1715,31 +2248,70 @@ class Notepad(QMainWindow):
 
     
     def closeEvent(self, event):
+        today = datetime.date.today()
+        leroy_anniv = datetime.date(today.year, 4, 11)
+        undertale_anniv = datetime.date(today.year, 9, 15)  # Set correct Undertale anniversary
+
         msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(self.tr("Confirm Exit"))
-        msg_box.setText(self.tr("All right, time's up, let's do this!\n\nLEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEROY\nJEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENKINS!"))
-        ok_button = msg_box.addButton(self.tr("Charge ahead! No regrets!"), QMessageBox.ButtonRole.AcceptRole)
-        cancel_button = msg_box.addButton(self.tr("ABORT! ABORT!"), QMessageBox.ButtonRole.RejectRole)
+        msg_box.setWindowTitle("Confirm Exit")
+
+        if today == leroy_anniv:
+            msg_box.setText(
+                "All right, time's up, let's do this!\n\n"
+                "LEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEROY\n"
+                "JEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENKINS!"
+            )
+            ok_button_text = "Charge ahead! No regrets!"
+            cancel_button_text = "ABORT! ABORT!"
+        elif today == undertale_anniv:
+            msg_box.setText(
+            """☜︎☠︎❄︎☼︎✡︎ ☠︎🕆︎💣︎👌︎☜︎☼︎ 💧︎☜︎✞︎☜︎☠︎❄︎☜︎☜︎☠︎
+👎︎✌︎☼︎😐︎ 👎︎✌︎☼︎😐︎☜︎☼︎ ✡︎☜︎❄︎ 👎︎✌︎☼︎😐︎☜︎☼︎
+❄︎☟︎☜︎ 👎︎✌︎☼︎😐︎☠︎☜︎💧︎💧︎ 😐︎☜︎☜︎🏱︎💧︎ ☝︎☼︎⚐︎🕈︎✋︎☠︎☝︎
+❄︎☟︎☜︎ 💧︎☟︎✌︎👎︎⚐︎🕈︎💧 👍︎🕆︎❄︎❄︎✋︎☠︎☝︎ 👎︎☜︎☜︎🏱︎☜︎☼︎
+🏱︎☟︎⚐︎❄︎⚐︎☠︎ ☼︎☜︎✌︎👎︎✋︎☠︎☝︎💧︎ ☠︎☜︎☝︎✌︎❄︎✋︎✞︎☜︎
+❄︎☟︎✋︎💧︎ ☠︎☜︎✠︎❄︎ ☜︎✠︎🏱︎☜︎☼︎✋︎💣︎☜︎☠︎❄︎
+💧︎☜︎☜︎💣︎💧︎
+✞︎☜︎☼︎✡︎
+✞︎☜︎☼︎✡︎
+✋︎☠︎❄︎☜︎☼︎☜︎💧︎❄︎✋︎☠︎☝︎
+📬︎📬︎📬︎
+🕈︎☟︎✌︎❄︎ 👎︎⚐︎ ✡︎⚐︎🕆︎ ❄︎🕈︎⚐︎ ❄︎☟︎✋︎☠︎😐︎"""
+        )
+            ok_button_text = "OK"
+            cancel_button_text = "Cancel"
+        else:
+            msg_box.setText("Are you sure you want to exit?")
+            ok_button_text = "Yes, exit"
+            cancel_button_text = "Cancel"
+
+        ok_button = msg_box.addButton(ok_button_text, QMessageBox.ButtonRole.AcceptRole)
+        cancel_button = msg_box.addButton(cancel_button_text, QMessageBox.ButtonRole.RejectRole)
+
         msg_box.exec()
 
         if msg_box.clickedButton() == cancel_button:
             event.ignore()
             return
 
-        # User wants to exit. Check for unsaved changes.
+        # Now check unsaved changes if user agreed to exit
         if self.unsaved_changes_flag:
-            # warn_unsaved_changes returns True if the app should close (Save/Discard)
+            # warn_unsaved_changes() returns True if the app should close (Save/Discard)
             # and False if it should not (Cancel).
             if self.warn_unsaved_changes():
+                self.cleanupTemp()
                 event.accept()
             else:
                 # User cancelled the "save changes" dialog
                 event.ignore()
         else:
-            # No unsaved changes, so we can close.
+            # No unsaved changes, so we can close safely
+            self.cleanupTemp()
             event.accept()
 
-    
+
+
+
     def handle_text_changed(self):
         self.unsaved_changes_flag = True
         if self.file_path:
@@ -1836,6 +2408,37 @@ class Notepad(QMainWindow):
         dlg = DownloadOptions()
         dlg.exec()
 
+    def crypto_tool(self):
+        self.feature_not_ready()
+        """
+        Open the Cryptography tool window as a single instance,
+        tied to the main window, and raise it if already open.
+        """
+        """try:
+            # If already open & visible: just bring to front
+            if hasattr(self, "crypto_window") and self.crypto_window is not None:
+                if self.crypto_window.isVisible():
+                    self.crypto_window.raise_()
+                    self.crypto_window.activateWindow()
+                    return
+                else:
+                    # Window exists but closed => delete reference
+                    self.crypto_window.deleteLater()
+                    self.crypto_window = None
+
+            # Create a new instance, parented to the main window
+            self.crypto_window = CryptoGUI(self, as_window=True)
+
+            # Make sure that when user closes it manually, we clear the reference
+            self.crypto_window.destroyed.connect(lambda: setattr(self, "crypto_window", None))
+
+            # Show the new window
+            self.crypto_window.show()
+            self.crypto_window.raise_()
+            self.crypto_window.activateWindow()
+
+        except Exception:
+            logger.exception("Failed to open CryptoGUI")"""
     
     def toggle_character_map(self, checked):
         self.character_dock.setVisible(checked)
@@ -1908,6 +2511,85 @@ class Notepad(QMainWindow):
             QMessageBox.information(self, self.tr("Update"), self.tr("New version available: %s") % tag)
         else:
             QMessageBox.information(self, self.tr("Update"), self.tr("No updates available."))
+    
+    def open_encryption_tool(self):
+        dlg = TextEncToolDialog(self)
+        dlg.exec_()
+
+    def onModificationChanged(self, changed: bool):
+        self.unsaved_changes_flag = True
+
+    def autoSave(self):
+        if not self.unsaved_changes_flag:
+            return
+
+        if self.file_path:
+            fname = os.path.basename(self.file_path) + ".bptmp"
+            temp_path = os.path.join(BUNNYPAD_TEMP, fname)
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write("[TYPE:WITHPATH]\n")
+                f.write(self.file_path + "\n")
+                f.write("[DATA]\n")
+                f.write(self.textedit.toPlainText())
+            self.saveState(temp_path)
+        else:
+            temp_path = os.path.join(BUNNYPAD_TEMP, "unsaved_note.bptmp")
+            text = self.textedit.toPlainText()
+            encoded = binascii.hexlify(text.encode("utf-8")).decode("utf-8")
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write("[TYPE:UNSAVED]\n")
+                f.write(encoded)
+            self.saveState(temp_path)
+
+        self.textedit.document().setModified(False)
+        self.unsaved_changes_flag = False
+
+    def saveState(self, path: str):
+        state = {"last_file": path}
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f)
+
+    def loadState(self):
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r") as f:
+                return json.load(f).get("last_file")
+        return None
+
+    def restoreSession(self):
+        last_file = self.loadState()
+        if last_file and os.path.exists(last_file):
+            with open(last_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+            if lines[0].startswith("[TYPE:UNSAVED]"):
+                encoded = "".join(lines[1:]).strip()
+                try:
+                    decoded = binascii.unhexlify(encoded).decode("utf-8")
+                except Exception:
+                    decoded = ""
+                self.textedit.setPlainText(decoded)
+                self.file_path = None
+
+            elif lines[0].startswith("[TYPE:WITHPATH]"):
+                path = lines[1].strip()
+                try:
+                    sep_index = lines.index("[DATA]\n")
+                    content = "".join(lines[sep_index + 1:])
+                except ValueError:
+                    content = ""
+                self.textedit.setPlainText(content)
+                self.file_path = path
+                self.unsaved_changes_flag = True
+                
+    def cleanupTemp(self):
+        for fname in os.listdir(BUNNYPAD_TEMP):
+            if fname.endswith(".bptmp"):
+                try:
+                    os.remove(os.path.join(BUNNYPAD_TEMP, fname))
+                except Exception:
+                    pass
+        if os.path.exists(DIRTY_FILE):
+            os.remove(DIRTY_FILE)
 
 
 # --------------------
@@ -1918,14 +2600,15 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setOrganizationName(ORGANIZATION_NAME)
-    ss = load_stylesheet()
-    if ss:
-        app.setStyleSheet(ss)
+    stylesheet = load_stylesheet()
+    if stylesheet:
+        app.setStyleSheet(stylesheet)
     else:
         app.setStyle("Fusion")
-    win = Notepad()
-    win.show()
+    window = Notepad()
+    window.show()
     sys.exit(app.exec())
+
 
 
 if __name__ == "__main__":

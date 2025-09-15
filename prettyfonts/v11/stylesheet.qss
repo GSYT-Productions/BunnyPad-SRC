@@ -1,70 +1,391 @@
-/* Default Stylesheet for BunnyPad */
-
-/* Set the background color of icons */
-QLabel[icon=true] {
-    background-color: #0078D7;
-    border-radius: 5px; /* Adjust the value as needed */
+/* New Default Stylesheet for BunnyPad */
+/* Universal font for all widgets */
+* {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 11pt;
 }
 
-/* Set the background color of toolbars */
-QToolBar {
-    background-color: #0078D7;
-    border-radius: 5px; /* Adjust the value as needed */
+QMainWindow,
+QDialog,
+QDockWidget,
+QToolBar,
+CharacterWidget {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,   /* vivid blue */
+        stop:0.5 #8C49F0,   /* brand purple */
+        stop:1   #F7A3C5    /* soft pink */
+    );
+    color: white;
+}
+QLineEdit {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    background-color: rgba(50,50,50,0.2); /* overlay */
+    border-radius: 4px;
+    padding: 3px;
+    color: white;
+    selection-background-color: rgba(255,255,255,0.3);
+}
+QInputDialog QLineEdit {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    background-color: rgba(50,50,50,0.2); /* overlay */
+    border-radius: 4px;
+    padding: 3px;
+    color: white;
+    selection-background-color: rgba(255,255,255,0.3);
 }
 
-/* Set the background color of the window */
-QMainWindow {
-    background-color: #8C49F0;
-    border-radius: 5px; /* Adjust the value as needed */
-}
-
-/* Set the color of the titlebar text */
-QMainWindow::title {
+QMainWindow *,
+QDialog *,
+QMessageBox *,
+QDockWidget *,
+QToolBar *,
+CharacterWidget * {
+    background: transparent;
     color: white;
 }
 
-/* Set the color of the titlebar background */
-QMainWindow::titleBar {
-    background-color: #8C49F0;
-    border-radius: 5px; /* Adjust the value as needed */
-}
-
-/* Set the background color of the status bar */
-QStatusBar {
+QLineEdit, QSpinBox, QTextEdit, QPlainTextEdit, QComboBox {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    background-color: rgba(50,50,50,0.2);
+    border-radius: 4px;
+    padding: 3px;
     color: white;
-    background-color: #0078D7;
-    border-radius: 5px; /* Adjust the value as needed */
+    selection-background-color: rgba(255,255,255,0.3);
 }
 
-/* Set the background color of menus */
-QMenuBar {
-    background-color: #8C49F0;
-    border-radius: 5px; /* Adjust the value as needed */
+QMenuBar, QToolBar, QStatusBar {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
-/* Set the text color of menus */
-QMenuBar::item {
-    color: white;
+QMenuBar::item:selected,
+QMenu::item:selected {
+    background-color: rgba(255,255,255,0.35);
 }
-
-/* Set the background color of menu items */
+/* Drop-down menus */
 QMenu {
-    background-color: #6AA5F3;
-    border-radius: 5px; /* Adjust the value as needed */
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,
+        stop: 0.5 #8C49F0,
+        stop: 1   #F7A3C5
+    );
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+}
+QPushButton {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 6px;
+    font-weight: bold;
+    padding: 5px 12px;
+    color: white;
+}
+QPushButton:hover {
+    border-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,0.15);
+}
+QPushButton:pressed {
+    border-color: rgba(255,255,255,0.4);
 }
 
-/* Set the text color of menu items */
-QMenu::item {
+QDialog, QMessageBox {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
     color: white;
 }
 
-/* Set the background color of dialog windows */
+QDialog * {
+    background: transparent;
+    color: white;
+}
+
+QCheckBox::indicator {
+    width: 16px; height: 16px;
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 3px;
+}
+
+QCheckBox::indicator:hover {
+    border-color: rgba(255,255,255,0.95);
+    background-color: rgba(255,255,255,0.15);
+}
+QCheckBox::indicator:checked {
+    background-color: rgba(255,255,255,0.2);
+    image: url("images/check.png");
+}
+
+/* QComboBox Fixes */
+/* Arrow subcontrol */
+QComboBox::down-arrow {
+    image: url("images/arrow_down.png");
+    width: 12px;
+    height: 12px;
+}
+
+/* Ensure the arrow area isn’t squashed */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 20px;
+    border-left: 1px solid rgba(255,255,255,0.25);
+}
+
+/* Popup list (the dropdown menu itself) */
+QComboBox QAbstractItemView {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    selection-background-color: rgba(255,255,255,0.25);
+    color: white;
+    outline: none;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+QToolTip {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    color: white;
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QSpinBox::up-button, QSpinBox::down-button {
+    background: transparent;
+    border-left: 1px solid rgba(255,255,255,0.2);
+    width: 16px;
+}
+
+/* Custom arrow images */
+QSpinBox::up-arrow {
+    image: url("images/arrow_up.png");
+    width: 8px;
+    height: 8px;
+}
+QSpinBox::down-arrow {
+    image: url("images/arrow_down.png");
+    width: 8px;
+    height: 8px;
+}
+
+/* QMessageBox Styling */
 QMessageBox {
-    background-color: #8C49F0;
-    border-radius: 5px; /* Adjust the value as needed */
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    color: white;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px;
 }
 
-/* Set the text color of dialog windows */
+/* Ensure the text inside is visible */
 QMessageBox QLabel {
+    background: transparent;
+    color: white;
+    font-size: 11pt;
+}
+
+/* Style the buttons inside message boxes */
+QMessageBox QPushButton {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 6px;
+    font-weight: bold;
+    padding: 5px 12px;
     color: white;
 }
+QMessageBox QPushButton:hover {
+    border-color: rgba(255,255,255,0.9);
+    background-color: rgba(255,255,255,0.15);
+}
+QMessageBox QPushButton:pressed {
+    border-color: rgba(255,255,255,0.4);
+    background-color: rgba(255,255,255,0.1);
+}
+
+#FloatingWindow {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    color: white;
+}
+#FloatingWindow * {
+    background: transparent;
+    color: white;
+}
+
+
+#CryptoGUI {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,   /* vivid blue */
+        stop: 0.5 #8C49F0,   /* brand purple */
+        stop: 1   #F7A3C5    /* soft pink */
+    );
+}
+
+#CryptoGUI QFrame,
+#CryptoGUI QGroupBox,
+#CryptoGUI QWidget,
+#CryptoGUI QLabel,
+#CryptoGUI QCheckBox {
+    background: transparent;
+    color: white;
+}
+
+#CryptoGUI QLineEdit,
+#CryptoGUI QSpinBox,
+#CryptoGUI QComboBox,
+#CryptoGUI QTextEdit,
+#CryptoGUI QPlainTextEdit {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,
+        stop: 0.5 #8C49F0,
+        stop: 1   #F7A3C5
+    );
+    background-color: rgba(50, 50, 50, 0.2); /* subtle gray overlay for usability */
+    color: white;
+    border-radius: 4px;
+    padding: 3px;
+    selection-background-color: rgba(255,255,255,0.3);
+}
+
+#CryptoGUI QMenuBar,
+#CryptoGUI QMenu {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,
+        stop: 0.5 #8C49F0,
+        stop: 1   #F7A3C5
+    );
+    color: white;
+}
+#CryptoGUI QMenu {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,
+        stop: 0.5 #8C49F0,
+        stop: 1   #F7A3C5
+    );
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+}
+#CryptoGUI QMenuBar::item:selected,
+#CryptoGUI QMenu::item:selected {
+    background-color: rgba(255, 255, 255, 0.2); /* highlight selection without breaking gradient */
+}
+
+#CryptoGUI QPushButton {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.6);
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    padding: 5px 12px;
+}
+#CryptoGUI QPushButton:hover {
+    border-color: rgba(255,255,255,0.9);
+}
+#CryptoGUI QPushButton:pressed {
+    border-color: rgba(255,255,255,0.4);
+}
+
+#CryptoGUI QDialog,
+#CryptoGUI QMessageBox {
+    background: qlineargradient(
+        x1: 0, y1: 0, x2: 1, y2: 1,
+        stop: 0   #0078D7,
+        stop: 0.5 #8C49F0,
+        stop: 1   #F7A3C5
+    );
+    color: white;
+    border-radius: 5px;
+}
+
+/* Arrow subcontrol */
+#CryptoGUI QComboBox::down-arrow {
+    image: url("images/arrow_down.png"); /* replace with your own arrow */
+    width: 12px;
+    height: 12px;
+}
+
+/* Ensure the arrow area isn’t squashed */
+#CryptoGUI QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 20px;
+    border-left: 1px solid rgba(255,255,255,0.25);
+}
+
+/* Popup list (the dropdown menu itself) */
+#CryptoGUI QComboBox QAbstractItemView {
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0   #0078D7,
+        stop:0.5 #8C49F0,
+        stop:1   #F7A3C5
+    );
+    selection-background-color: rgba(255,255,255,0.25);
+    color: white;
+    outline: none;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+#CryptoGUI QSpinBox::up-button,
+#CryptoGUI QSpinBox::down-button {
+    background: transparent;
+    border-left: 1px solid rgba(255,255,255,0.2);
+    width: 16px;
+}
+
+/* Custom arrow images (fixed selector) */
+#CryptoGUI QSpinBox::up-arrow {
+    image: url("images/arrow_up.png");
+    width: 8px;
+    height: 8px;
+}
+
+#CryptoGUI QSpinBox::down-arrow {
+    image: url("images/arrow_down.png");
+    width: 8px;
+    height: 8px;
+}
+
