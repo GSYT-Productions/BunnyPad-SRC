@@ -46,14 +46,20 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[Setup]
+; pass /DBaseDir="C:\BunnyPad\v11\Qt5" or point to your staging dir
+#ifndef BaseDir
+#define BaseDir "{#SourcePath}"
+#endif
+
 [Files]
-Source: "C:\BunnyPad\v11\Qt5\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\bpdl.png"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\bunnypad.png"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\gsyt.png"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\LICENSE"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\stylesheet.qss"; DestDir: "{app}"; Flags: ignoreversion ; Change this to the appropriate folder
-Source: "C:\BunnyPad\v11\Qt5\images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs ; Change this to the appropriate folder
+Source: "{#BaseDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\bpdl.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\bunnypad.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\gsyt.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\stylesheet.qss"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#BaseDir}\images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
