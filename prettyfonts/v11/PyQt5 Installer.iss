@@ -46,7 +46,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
-[Setup]
 ; pass /DBaseDir="C:\BunnyPad\v11\Qt5" or point to your staging dir
 #ifndef BaseDir
 #define BaseDir "{#SourcePath}"
