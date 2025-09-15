@@ -132,7 +132,19 @@ except ImportError as e:
 
     
     def install_with_pip(pip_cmd):
-        """Install dependencies using the specified pip command."""
+        """
+        Install required Python packages using the provided pip command.
+        
+        This runs the given pip executable (e.g. "pip", "pip3", or a virtualenv pip path) with
+        --no-cache-dir to install a fixed set of runtime dependencies required by the application.
+        On installation failure the process will print an error and terminate the interpreter.
+        
+        Parameters:
+            pip_cmd (str): The pip executable or command to invoke.
+        
+        Side effects:
+            Exits the process with status code 1 if installation fails.
+        """
         try:
             subprocess.run([
                 pip_cmd, "install", "--no-cache-dir",
@@ -337,7 +349,18 @@ def safe_subprocess_run(cmd, shell=False, capture_output=True, text=True, timeou
 
 
 def get_icon_path(icon_name: str) -> str:
-    """Resolve icon path robustly."""
+    """
+    Resolve the filesystem path for a named icon.
+    
+    Looks up the icon name (without a trailing `.png`) in ICON_PATHS first; if not found or missing on disk,
+    checks SCRIPT_DIR/IMAGES_DIR for `<name>.png` and `<name>.PNG`. Returns an empty string if no valid file is found.
+    
+    Parameters:
+        icon_name (str): Icon identifier or filename (may include a trailing `.png`).
+    
+    Returns:
+        str: Absolute path to the icon file if found, otherwise an empty string.
+    """
     key = icon_name.replace(".png", "")
     path = ICON_PATHS.get(key)
     if path and Path(path).exists():
@@ -352,7 +375,11 @@ def get_icon_path(icon_name: str) -> str:
     return ""
 
 def load_stylesheet() -> str:
-    """Load stylesheet.qss if present."""
+    """
+    Return the contents of "stylesheet.qss" from the script directory.
+    
+    Reads SCRIPT_DIR/stylesheet.qss and returns its text content. If the file is missing or cannot be read for any reason, returns an empty string (no exceptions are raised).
+    """
     path = SCRIPT_DIR / "stylesheet.qss"
     if not path.exists():
         return ""
@@ -369,6 +396,19 @@ def load_stylesheet() -> str:
 
 
 def parse_rccm_file(filepath):
+    """
+    Parse an RCCM file (hex-encoded JSON) and return its contents as a dictionary.
+    
+    The function reads the file at `filepath`, treats the entire file contents as hex-encoded UTF-8 JSON,
+    decodes and parses it, and returns the resulting Python object (typically a dict). If the file
+    cannot be read, the hex decoding fails, or the content is not valid JSON, the function returns None.
+    
+    Parameters:
+        filepath (str): Path to the RCCM file containing hex-encoded JSON.
+    
+    Returns:
+        dict | list | None: The parsed JSON object on success (commonly a dict); None on any error.
+    """
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             hexdata = f.read().strip()
@@ -380,7 +420,17 @@ def parse_rccm_file(filepath):
 
 
 def save_as_pdf(text: str, file_path: str) -> bool:
-    """Save text as PDF using fpdf (if available)."""
+    """
+    Save plain text to a PDF file using the FPDF library.
+    
+    If the FPDF package is not available this function returns False. On success it writes a PDF to the given file path and returns True; on failure it returns False (errors are logged).
+    Parameters:
+        text (str): The text content to write to the PDF.
+        file_path (str): Destination filesystem path for the generated PDF.
+    
+    Returns:
+        bool: True if the PDF was created and written successfully, False otherwise.
+    """
     if FPDF is None:
         logger.error("FPDF not available.")
         return False
@@ -646,7 +696,11 @@ def get_gpu_info() -> str:
 
 
 def get_system_info() -> str:
-    """Return assembled system info string."""
+    """
+    Assemble and return a best-effort, human-readable summary of the host system.
+    
+    The returned multi-line string contains lines for OS, CPU, RAM, GPU, Disk, and Screen Resolution when available. Each line is best-effort and may show "Unknown" for values that cannot be determined. On unexpected errors the function logs the failure and returns the literal string "System information not available".
+    """
     try:
         parts = []
         parts.append(f"OS: {identify_os()}")
@@ -683,6 +737,19 @@ class CharacterWidget(QWidget):
 
     
     def __init__(self, parent=None, as_window=False):
+        """
+        Initialize the character map widget.
+        
+        Sets up widget/window flags, default font and layout parameters, Unicode ranges to display,
+        and initial codepoint range selection. If created as a standalone window (as_window=True),
+        the widget is given the "FloatingWindow" objectName and its size is fixed to the preferred size.
+        
+        Parameters:
+            as_window (bool): If True, construct this object as a top-level window instead of an embedded widget.
+        
+        Note:
+            The parent parameter is the usual Qt parent widget and is intentionally undocumented here.
+        """
         flags = Qt.Window if as_window else Qt.Widget
         super().__init__(parent, flags)
 
@@ -812,6 +879,18 @@ class CharacterWidget(QWidget):
 
     
     def paintEvent(self, event: QPaintEvent) -> None:
+        """
+        Render the character grid for the character-map widget.
+        
+        Draws a semi-transparent background tint, grid lines for visible rows and columns, and centered glyphs
+        for the visible codepoints. Highlights the cell matching `self.last_key` with a pale red background.
+        
+        Notes:
+        - Uses widget attributes: `display_font`, `square_size`, `columns`, `total_characters`,
+          `start_codepoint`, `last_key`, and `_chr(codepoint)` to obtain glyphs.
+        - Only paints the region covered by `event.rect()` for efficiency.
+        - Does not return a value.
+        """
         painter = QPainter(self)
         painter.fillRect(event.rect(), QColor(50, 50, 50, 50))  # semi-translucent tint
         painter.setFont(self.display_font)
@@ -898,6 +977,16 @@ class AboutDialog(QDialog):
 
     
     def setup_ui(self):
+        """
+        Set up and populate the dialog's UI for the About/Easter-egg panel.
+        
+        Creates a vertical layout containing the app title, a clickable logo (wired to
+        activate_skillsusa_easter_egg), copyright/build/developer information, a random
+        thematic phrase (including an anagram of "pet the bunny"), and runtime paths
+        (showing the detected OS and installation directory). All child widgets are
+        center-aligned. This method has no return value and modifies the widget tree
+        (stateful side effect on `self`).
+        """
         layout = QVBoxLayout(self)
         title = QLabel(self.tr("BunnyPad\u2122"))
         font = title.font()
@@ -1040,6 +1129,18 @@ class SystemInfoDialog(QDialog):
         self.setup_ui()
 
     def setup_ui(self):
+        """
+        Set up the SystemInfoDialog UI: builds and arranges widgets showing system information, installation directory, a logo, and a random descriptive phrase.
+        
+        Creates a vertical layout containing:
+        - A large "System Information" title.
+        - An application/logo pixmap if available.
+        - One QLabel per non-empty line from self.system_info_text.
+        - A label with the installation directory (self.current_dir).
+        - A randomly chosen descriptive phrase from a predefined list.
+        
+        All added labels are center-aligned horizontally. The method is UI-only and does not return a value.
+        """
         layout = QVBoxLayout(self)
         title = QLabel(self.tr("System Information"))
         font = title.font()
@@ -1153,6 +1254,17 @@ class FeatureNotReady(QDialog):
 
     
     def setup_ui(self):
+        """
+        Set up the dialog UI: a vertically stacked, centered layout with app title, clickable logo, explanatory message, and an OK button.
+        
+        Creates a QVBoxLayout containing:
+        - A large "BunnyPad™" title label.
+        - A ClickableLabel showing the "bunnypad" icon (if available) that calls self.activate_null_easter_egg when clicked.
+        - A wrapped informational message explaining the feature is disabled.
+        - An OK QPushButton connected to self.accept.
+        
+        All added widgets are center-aligned horizontally.
+        """
         layout = QVBoxLayout(self)
         title = QLabel(self.tr("BunnyPad\u2122"))
         font = title.font()
@@ -1189,6 +1301,14 @@ class FeatureNotReady(QDialog):
 
     
     def activate_null_easter_egg(self, event):
+        """
+        Show a W.D. Gaster-themed easter egg message box.
+        
+        This handler displays a modal QMessageBox with a glyph-based Gaster message and a themed window title/icon. Intended to be used as an event handler (e.g., mouse click).
+        
+        Parameters:
+            event: The triggering Qt event (e.g., QMouseEvent). Only used to conform to the event handler signature; its contents are ignored.
+        """
         gastertext = "❄︎☟︎☜︎ ☹︎✌︎👌︎📬︎📬︎📬︎ ✋︎❄︎ 🕈︎☟︎✋︎💧︎🏱︎☜︎☼︎💧︎📬︎📬︎📬︎ ☟︎⚐︎🕈︎ ✋︎☠︎❄︎☜︎☼︎☜︎💧︎❄︎✋︎☠︎☝︎📬︎📬︎📬︎" # THE LAB... IT WHISPERS... HOW INTERESTING...
         msg_box = QMessageBox(self)
         msg_box.setWindowIcon(QIcon(get_icon_path("bunnypad")))
@@ -1308,6 +1428,18 @@ class DownloadOptions(QDialog):
 
     
     def setup_ui(self):
+        """
+        Builds the dialog's user interface.
+        
+        Creates a vertical layout containing:
+        - An instructional QLabel.
+        - A grid of QPushButton entries for common download/donation links. For each button the code attempts to connect to a corresponding handler on the instance by name using the pattern
+          "on_<object_name>_clicked" (spaces and hyphens converted to underscores). If no handler exists the button opens a default GitHub URL.
+        - A QLCDNumber (stored as self.lcd_number) initialized to display "27000".
+        - A Close QPushButton that rejects the dialog when pressed.
+        
+        This method has no return value; it assigns UI widgets as attributes on the instance (notably self.lcd_number).
+        """
         main_layout = QVBoxLayout(self)
         text_label = QLabel(self.tr("Where do you want to go today?\n\nChoose one of the available download options:"))
         main_layout.addWidget(text_label)
@@ -1356,28 +1488,62 @@ class DownloadOptions(QDialog):
 
     
     def on_latest_stable_source_clicked(self):
+        """
+        Open the BunnyPad source repository in the user's default web browser.
+        
+        This handler launches the system default web browser to the BunnyPad source code GitHub URL.
+        """
         webbrowser.open("https://github.com/GSYT-Productions/BunnyPad-SRC/")
 
     
     def on_bunnypad_donation_clicked(self):
+        """
+        Open the BunnyPad donation page in the user's default web browser.
+        """
         webbrowser.open("https://throne.com/bunnypad")
 
     
     def on_customizer_clicked(self):
+        """
+        Open the BunnyPad Customizer webpage in the user's default web browser.
+        
+        This launches the system's default browser pointing to the BunnyPad Customizer URL.
+        """
         webbrowser.open("https://gsyt-productions.github.io/BunnyPadCustomizer/")
 
     
     def on_tech_stuff_website_clicked(self):
+        """
+        Open the TekNix Stuff website in the user's default web browser.
+        
+        This triggers the system's default browser to navigate to https://teknixstuff.com. No value is returned.
+        """
         webbrowser.open("https://teknixstuff.com")
 
     
     def on_r3dfox_download_clicked(self):
+        """
+        Open the r3dfox releases page in the user's default web browser.
+        
+        This is an event handler intended to be connected to a UI control's click action; it launches the r3dfox GitHub releases URL and does not return a value.
+        """
         webbrowser.open("https://github.com/Eclipse-Community/r3dfox/releases/")
 
     def on_donate_to_tech_stuff_clicked(self):
+        """
+        Open the default web browser to the TeknixStuff donation page.
+        
+        This triggers the system's default web browser to navigate to
+        "https://teknixstuff.com/Network/Donate/". No value is returned.
+        """
         webbrowser.open("https://teknixstuff.com/Network/Donate/")
 
     def on_join_our_discord_clicked(self):
+        """
+        Open the BunnyPad Discord invite URL in the user's default web browser.
+        
+        This triggers the system's default browser to navigate to https://discord.gg/w7ls.
+        """
         webbrowser.open("https://discord.gg/w7ls")
 
 
@@ -1431,6 +1597,14 @@ class update_checker(QThread):
 
     
     def __init__(self, repo_owner=REPO_OWNER, repo_name=REPO_NAME, use_pre_release=False):
+        """
+        Initialize the update checker.
+        
+        Parameters:
+            repo_owner (str): GitHub repository owner (defaults to module REPO_OWNER).
+            repo_name (str): GitHub repository name (defaults to module REPO_NAME).
+            use_pre_release (bool): If True, include pre-release entries when checking for updates.
+        """
         super().__init__()
         self.repo_owner = repo_owner
         self.repo_name = repo_name
@@ -1438,6 +1612,15 @@ class update_checker(QThread):
 
     
     def run(self):
+        """
+        Fetch GitHub releases for the configured repository and emit the most recent stable and prerelease release info.
+        
+        This method performs an HTTP GET to the GitHub Releases API for self.repo_owner/self.repo_name and selects the most-recently published stable release and prerelease (based on the `published_at` field). It then emits the `update_check_completed` signal with a dict containing up to two keys:
+        - "stable": {"version": tag_name, "url": html_url, "date": published_at}
+        - "prerelease": {"version": tag_name, "url": html_url, "date": published_at}
+        
+        If the `requests` module is unavailable, if the HTTP request fails, or any other error occurs, the method emits `update_check_completed` with an empty dict. All exceptions are caught and logged; this method does not raise.
+        """
         info = {}
         if requests is None:
             self.update_check_completed.emit({})
@@ -1470,12 +1653,27 @@ class update_checker(QThread):
 # --------------------
 class CryptoEngine:
     def __init__(self):
+        """
+        Initialize the CryptoEngine.
+        
+        Sets the German marker token and makes a shallow copy of the module-level German word list so the instance can modify its word list without altering the global constant.
+        """
         self.german_marker = GERMAN_MARKER
         self.german_words = GERMAN_WORDS.copy()
 
     # ---- Caesar ----
     @staticmethod
     def caesar_cipher(text, shift):
+        """
+        Apply a Caesar cipher to alphabetic characters in `text`, preserving case and leaving non-letters unchanged.
+        
+        Parameters:
+            text (str): Input string to be transformed.
+            shift (int): Number of positions to shift each letter. Can be positive or negative; shifts wrap modulo 26.
+        
+        Returns:
+            str: The transformed string with letters shifted by `shift`.
+        """
         result = ""
         for char in text:
             if char.isalpha():
@@ -1487,32 +1685,109 @@ class CryptoEngine:
 
     @staticmethod
     def caesar_decipher(text, shift):
+        """
+        Return the Caesar-cipher-decoded version of the given text by applying the inverse shift.
+        
+        Parameters:
+            text (str): Input string to decipher; alphabetic characters are shifted, case-preserving; non-letters are unchanged.
+            shift (int): Number of positions used in the original encoding; this function applies the negated shift to reverse it.
+        
+        Returns:
+            str: The deciphered text.
+        """
         return CryptoEngine.caesar_cipher(text, -shift)
 
     # ---- Hex/Base64 ----
     @staticmethod
     def hex_encode(text):
+        """
+        Encode a Unicode string to a lowercase hexadecimal representation of its UTF-8 bytes.
+        
+        Parameters:
+            text (str): Input text to encode.
+        
+        Returns:
+            str: Hex string produced by UTF-8 encoding of `text`.
+        """
         return text.encode("utf-8").hex()
 
     @staticmethod
     def hex_decode(text):
+        """
+        Decode a hex-encoded UTF-8 string.
+        
+        Parameters:
+            text (str): Hexadecimal string (even length) representing UTF-8 encoded bytes.
+        
+        Returns:
+            str: The decoded UTF-8 text.
+        
+        Raises:
+            ValueError: If `text` is not valid hexadecimal (including odd length).
+            UnicodeDecodeError: If the decoded bytes are not valid UTF-8.
+        """
         return bytes.fromhex(text).decode("utf-8")
 
     @staticmethod
     def base64_encode(text):
+        """
+        Return the Base64 encoding of the given text.
+        
+        Encodes the input string as UTF-8 and returns its Base64 representation as a UTF-8 string.
+        
+        Parameters:
+            text (str): Input text to encode.
+        
+        Returns:
+            str: Base64-encoded string.
+        """
         return base64.b64encode(text.encode("utf-8")).decode("utf-8")
 
     @staticmethod
     def base64_decode(text):
+        """
+        Decode a Base64-encoded bytes or string to a UTF-8 string.
+        
+        Parameters:
+            text (str | bytes): Base64-encoded data.
+        
+        Returns:
+            str: Decoded UTF-8 string.
+        """
         return base64.b64decode(text).decode("utf-8")
 
     # ---- AES ----
     @staticmethod
     def valid_aes_key(key):
+        """
+        Return True if the provided key has a valid AES length (16, 24, or 32 bytes).
+        
+        Parameters:
+            key (str or bytes): Key material whose length is checked. For a `str`, length is measured in characters.
+        
+        Returns:
+            bool: True when len(key) is 16, 24, or 32; otherwise False.
+        """
         return len(key) in (16, 24, 32)
 
     @staticmethod
     def aes_encrypt(plaintext, key):
+        """
+        Encrypts a plaintext string using AES-CBC with PKCS7 padding and returns a base64-encoded payload.
+        
+        The function validates that `key` length is 16, 24, or 32 bytes (characters), generates a random 16-byte IV, pads
+        the UTF-8-encoded plaintext with PKCS7 to a 16-byte boundary, encrypts using AES-CBC, and returns base64(iv + ciphertext).
+        
+        Parameters:
+            plaintext (str): UTF-8 text to encrypt.
+            key (str): AES key as a string of length 16, 24, or 32 characters.
+        
+        Returns:
+            str: Base64-encoded string containing the IV followed by the ciphertext.
+        
+        Raises:
+            ValueError: If `key` is not 16, 24, or 32 characters long.
+        """
         if not CryptoEngine.valid_aes_key(key):
             raise ValueError("AES key must be 16, 24, or 32 characters long")
         key_bytes = key.encode()
@@ -1526,6 +1801,20 @@ class CryptoEngine:
 
     @staticmethod
     def aes_decrypt(ciphertext, key):
+        """
+        Decrypt a base64-encoded AES-CBC ciphertext and return the plaintext string.
+        
+        Parameters:
+            ciphertext (str): Base64-encoded string produced by the corresponding AES encrypt function (contains IV || ciphertext).
+            key (str): AES key as a text string; must be 16, 24, or 32 characters long.
+        
+        Returns:
+            str: The decrypted plaintext.
+        
+        Raises:
+            ValueError: If the provided key length is not valid for AES (not 16, 24, or 32 bytes).
+            (Propagates decryption-related exceptions from the underlying crypto library on malformed input or authentication errors.)
+        """
         if not CryptoEngine.valid_aes_key(key):
             raise ValueError("AES key must be 16, 24, or 32 characters long")
         raw = base64.b64decode(ciphertext)
@@ -1538,6 +1827,18 @@ class CryptoEngine:
 
     # ---- German words insertion ----
     def insert_german_words(self, text, interval):
+        """
+        Insert German marker-prefixed filler words into `text` after every `interval` words.
+        
+        Splits `text` on whitespace and, after each group of `interval` words, inserts a token consisting of the instance's `german_marker` followed by an entry from `self.german_words` (rotating through the list). If `interval` is falsy or less than 1, the original text is returned unchanged.
+        
+        Parameters:
+            text (str): Input string to augment.
+            interval (int): Number of words between inserted German-word tokens.
+        
+        Returns:
+            str: The modified text with marker-prefixed German words inserted.
+        """
         if not interval or interval < 1:
             return text
         words = text.split()
@@ -1549,10 +1850,42 @@ class CryptoEngine:
         return ' '.join(result)
 
     def remove_german_words(self, text):
+        """
+        Remove any inserted German-marker tokens from a whitespace-separated text.
+        
+        This strips tokens that start with the instance's `german_marker` (prefix) and returns
+        the remaining words joined by single spaces. Preserves relative word order and
+        collapses original spacing to single spaces.
+        
+        Parameters:
+            text (str): Input text possibly containing marker-prefixed German tokens.
+        
+        Returns:
+            str: Text with all marker-prefixed tokens removed.
+        """
         return ' '.join(word for word in text.split() if not word.startswith(self.german_marker))
 
     # ---- Pipelines ----
     def encrypt_pipeline(self, text, shift, key, interval):
+        """
+        Encrypt the given text with a multi-stage pipeline and return the ciphertext plus intermediate outputs.
+        
+        The pipeline (in order) inserts German marker words, applies a Caesar shift, hex-encodes the result,
+        base64-encodes that, then AES-encrypts the final string.
+        
+        Parameters:
+            text (str): Plaintext to encrypt.
+            shift (int): Caesar cipher shift amount (positive or negative).
+            key (str): AES key (must be a valid length for AES; validated by the engine).
+            interval (int): Interval at which German marker words are inserted into the text.
+        
+        Returns:
+            tuple[str, dict]: (encrypted_string, debug_steps)
+                - encrypted_string: final AES-encrypted output (base64 of IV + ciphertext).
+                - debug_steps: mapping of pipeline stage names to their outputs:
+                    'Inserted German Words', 'Caesar Cipher', 'Hex Encoded',
+                    'Base64 Encoded', 'AES Encrypted'.
+        """
         step1 = self.insert_german_words(text, interval)
         step2 = self.caesar_cipher(step1, shift)
         step3 = self.hex_encode(step2)
@@ -1568,6 +1901,26 @@ class CryptoEngine:
         return encrypted, debug_steps
 
     def decrypt_pipeline(self, text, shift, key, interval):
+        """
+        Decrypt the given ciphertext through the reverse of the encrypt_pipeline and return the cleaned plaintext and per-stage debug outputs.
+        
+        Performs AES decryption, then Base64 decode, hex decode, Caesar decipher, and removal of injected German-word markers. Returns a tuple (clean_text, debug_steps) where `debug_steps` is a dict with the intermediate values for each stage:
+        - 'AES Decrypted'
+        - 'Base64 Decoded'
+        - 'Hex Decoded'
+        - 'Caesar Deciphered'
+        - 'Cleaned Text'
+        
+        Parameters:
+            text (str): The ciphertext produced by the corresponding encrypt_pipeline.
+            shift (int): Caesar cipher shift used during encryption (positive integer). Required to reverse the Caesar step.
+            key (str): AES key as a raw string; must be a valid AES key length (16, 24, or 32 bytes) for AES-CBC decryption.
+            interval (int): Kept for API symmetry with encrypt_pipeline; not used during decryption.
+        
+        Returns:
+            tuple: (clean_text (str), debug_steps (dict)) on success.
+            On failure, returns an error string beginning with "[!] Decryption error:" and an empty dict.
+        """
         try:
             step1 = self.aes_decrypt(text, key)
             step2 = self.base64_decode(step1)
@@ -1590,6 +1943,19 @@ class CryptoEngine:
 # --------------------
 class CryptoGUI(QWidget):
     def __init__(self, parent=None, as_window=False):
+        """
+        Initialize the CryptoGUI widget or window.
+        
+        Parameters:
+            parent (QWidget | None): Optional Qt parent widget.
+            as_window (bool): If True, create as a top-level window (Qt.Window); otherwise as a widget.
+        
+        Side effects:
+            - Sets objectName to "CryptoGUI" for styling.
+            - Instantiates a CryptoEngine and assigns it to self.engine.
+            - Sets the window title and, if available, the application icon.
+            - Calls self.init_ui() to build the UI.
+        """
         flags = Qt.Window if as_window else Qt.Widget
         super().__init__(parent, flags)
         self.setObjectName("CryptoGUI")  # for targeted styling
@@ -1603,6 +1969,22 @@ class CryptoGUI(QWidget):
 
     def init_ui(self):
         # Cross-version enum aliases for QSizePolicy
+        """
+        Initialize and build the CryptoGUI user interface.
+        
+        Creates and arranges all widgets, layouts, and controls used by the encryption/decryption tool:
+        - Settings group (mode, Caesar shift, word interval, AES key, options).
+        - File operations buttons (Import/Export .rccm).
+        - Main splitter with Input, Output, and Debug text areas plus Run/Copy buttons.
+        - DPI-aware sizing and spacing.
+        - Wire-up for the "Show debug" checkbox to toggle the debug pane.
+        
+        Side effects:
+        - Assigns numerous widget instances to self (e.g., mode_combo, shift_spin, interval_spin,
+          key_box, critical_check, verbose_check, import_btn, export_btn, input_box, output_box,
+          debug_box, go_btn, copy_btn) for use elsewhere.
+        - Connects verbose_check to toggle visibility of the debug panel.
+        """
         try:
             SP_Expanding = QSizePolicy.Policy.Expanding
             SP_Fixed = QSizePolicy.Policy.Fixed
@@ -1732,6 +2114,13 @@ class CryptoGUI(QWidget):
 
         # ===== DEBUG VISIBILITY TOGGLE =====
         def toggle_debug(checked):
+            """
+            Show or hide the debug panel and adjust the surrounding splitter sizes.
+            
+            Parameters:
+                checked (bool): When True, shows the debug panel and expands the splitter to reveal it;
+                    when False, hides the debug panel and collapses its splitter pane.
+            """
             if checked:
 				# QMessageBox.information(self, "Debugging the Debugger", "[Show] toggle request acknowledged")
                 self.debug_box.show()
@@ -1746,6 +2135,13 @@ class CryptoGUI(QWidget):
 
     # ---- UI Handlers ----
     def on_mode_changed(self):
+        """
+        Reset the CryptoGUI controls to their default state for the selected mode.
+        
+        Clears the input, output, and debug text areas; clears the AES key entry; disables the copy button;
+        resets the "critical" and "verbose" checkboxes to unchecked; sets the Caesar shift spinner to 3
+        and the German-word interval spinner to 2; then refreshes import/export control visibility.
+        """
         self.input_box.clear()
         self.output_box.clear()
         self.debug_box.clear()
@@ -1758,11 +2154,21 @@ class CryptoGUI(QWidget):
         self.update_import_export_visibility()
 
     def update_import_export_visibility(self):
+        """
+        Update visibility of the import and export buttons based on the current mode.
+        
+        Reads the current text from `mode_combo` (case-insensitive). Shows the import button only when mode is "decrypt" and shows the export button only when mode is "encrypt". Both buttons are hidden for any other mode.
+        """
         mode = self.mode_combo.currentText().lower()
         self.import_btn.setVisible(mode == "decrypt")
         self.export_btn.setVisible(mode == "encrypt")
 
     def import_rccm_file(self):
+        """
+        Open an RCCM file, import its configuration, and populate the encryption UI for decryption.
+        
+        If the user selects a file, the function parses it with parse_rccm_file(). On successful parse it switches the UI to Decrypt mode, fills the Caesar shift and German-word interval controls, places the stored encrypted payload into the output area, enables the Copy button, and shows an informational message telling the user to enter the AES key and run decryption. If parsing fails it shows a warning. If the file dialog is cancelled, the method returns without side effects.
+        """
         filepath, _ = QFileDialog.getOpenFileName(self, "Open RCCM File", "", "RCCM Files (*.rccm)")
         if not filepath:
             return
@@ -1778,6 +2184,24 @@ class CryptoGUI(QWidget):
         QMessageBox.information(self, "Import Successful", f"Imported {os.path.basename(filepath)}\nEnter your AES key and press Run to decrypt.")
 
     def export_rccm_file(self):
+        """
+        Export the current encrypted output and associated settings as a hex-encoded RCCM configuration file.
+        
+        This method collects the encrypted payload from the UI output box along with the Caesar shift, AES key length,
+        German-word insertion interval, and a timestamp; packages them into JSON, hex-encodes the JSON, and prompts the
+        user to save the result as a `.rccm` file.
+        
+        Behavior and side effects:
+        - Reads values from self.output_box, self.key_box, self.shift_spin, and self.interval_spin.
+        - Validates that there is non-empty encrypted output and that the AES key length is 16, 24, or 32 bytes
+          (uses CryptoEngine.valid_aes_key); if validation fails, a user-facing error is shown and no file dialog appears.
+        - Opens a Save File dialog (QFileDialog); if the user selects a path, writes the hex-encoded JSON to that path,
+          appending the `.rccm` extension if omitted.
+        - On success shows an informational message box; on write failure shows an error message via self.show_error.
+        
+        Returns:
+            None
+        """
         encrypted_message = self.output_box.toPlainText().strip()
         if not encrypted_message:
             self.show_error("No encrypted output to export.")
@@ -1806,6 +2230,15 @@ class CryptoGUI(QWidget):
                 self.show_error(f"Failed to write file:\n{e}")
 
     def run_crypto(self):
+        """
+        Run the encryption or decryption pipeline using UI inputs and update the UI with results.
+        
+        Reads input text, AES key, Caesar shift, German-word interval, mode (encrypt/decrypt), and verbosity from the widget controls; validates required fields and key length, then calls the CryptoEngine pipeline. Places the resulting text into the output box, enables the copy button, and shows or clears the debug panel depending on the verbosity checkbox. If the "critical" checkbox is set, attempts to copy the output to the system clipboard (shows an informational or warning message box depending on clipboard availability).
+        
+        Notes:
+        - If decrypt mode and the input field is empty, the function will use the current output box contents as input.
+        - No value is returned; the function communicates results and errors via UI widgets and message boxes.
+        """
         text = self.input_box.toPlainText().strip()
         key = self.key_box.text().strip()
         shift = self.shift_spin.value()
@@ -1840,6 +2273,11 @@ class CryptoGUI(QWidget):
                 QMessageBox.warning(self, "Clipboard", "pyperclip not installed; clipboard functionality disabled.")
 
     def copy_output(self):
+        """
+        Copy the current output text to the system clipboard if clipboard support is available.
+        
+        If CLIPBOARD_ENABLED is True and there is non-empty text in the output box, the text is copied via pyperclip and an information dialog is shown. If the output is empty, a user-facing error is shown. If clipboard support is unavailable, a warning dialog informs the user that clipboard functionality is disabled.
+        """
         if CLIPBOARD_ENABLED:
             text = self.output_box.toPlainText()
             if text:
@@ -1851,6 +2289,12 @@ class CryptoGUI(QWidget):
             QMessageBox.warning(self, "Clipboard", "pyperclip not installed; clipboard functionality disabled.")
 
     def show_error(self, message):
+        """
+        Show a modal critical error message box with the given text.
+        
+        Parameters:
+            message (str): The error message to display to the user.
+        """
         QMessageBox.critical(self, "Error", message)
 # --------------------
 # Main Notepad (kept compatible)
@@ -1858,6 +2302,11 @@ class CryptoGUI(QWidget):
 class Notepad(QMainWindow):
     
     def __init__(self):
+        """
+        Initialize the main Notepad window.
+        
+        Sets window title, icon, and default size; creates and configures the central QTextEdit; initializes file state and update thread placeholder; marks the session as dirty by creating the DIRTY_FILE; starts a 10-second auto-save QTimer; restores a previous session if a dirty marker exists; builds menus, toolbars, and a status bar; creates a character-map dock (with a theme toggle when floating) and connects all relevant signals for tracking modifications, inserting characters, and handling dock state; finally shows the window.
+        """
         super().__init__()
         self.setWindowTitle(self.tr("Untitled - BunnyPad"))
         icon = get_icon_path("bunnypad")
@@ -1906,6 +2355,16 @@ class Notepad(QMainWindow):
         self.character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
         # 🔹 Theme toggling for dock when floating / docked
         def _char_dock_theme(floating):
+            """
+            Update the character map dock's objectName based on whether it's floating and force a Qt style refresh.
+            
+            Parameters:
+                floating (bool): True if the dock is currently floating (undocked); False if docked.
+            
+            Notes:
+                - Sets the dock's objectName to "FloatingWindow" when floating, otherwise clears it.
+                - Triggers unpolish/polish and update on the dock to ensure QSS rules are re-evaluated.
+            """
             if floating:
                 self.character_dock.setObjectName("FloatingWindow")
             else:
@@ -1924,6 +2383,20 @@ class Notepad(QMainWindow):
 
     
     def create_actions_and_menus(self):
+        """
+        Create and attach the application's menus, actions, and toolbar.
+        
+        Sets up File, Edit, Format, View, Tools, and Help menus with their QAction items (icons, shortcuts)
+        and connects each action to the corresponding handler on the window (e.g., new_file, open_file,
+        save_file, print_to_pdf, find_function, toggle_word_wrap, toggle_character_map, crypto_tool, etc.).
+        Also creates a movable QToolBar populated with common actions, installs a floating/docked theme helper,
+        and stores the character map toggle action on self._toggle_character_map_action for later access.
+        
+        Side effects:
+        - Calls self.setMenuBar(...) and self.addToolBar(...).
+        - Mutates self by adding attributes: toolbar and _toggle_character_map_action.
+        - Connects numerous signals from QAction/QToolBar to instance methods.
+        """
         menubar = QMenuBar(self)
         self.setMenuBar(menubar)
         self.menuBar().setNativeMenuBar(False)
@@ -2130,6 +2603,15 @@ class Notepad(QMainWindow):
         self.toolbar.setMovable(True)
         def _toolbar_theme(floating: bool):
             # Set the objectName so QSS can style it dynamically
+            """
+            Update toolbar styling based on whether it is floating.
+            
+            When called, sets the toolbar's objectName to "FloatingWindow" if floating is True (empty otherwise)
+            and forces the Qt style sheet to reapply so visual styles update immediately.
+            
+            Parameters:
+                floating (bool): True if the toolbar is currently floating (undocked); False if docked.
+            """
             self.toolbar.setObjectName("FloatingWindow" if floating else "")
             # Force QSS to re‑apply immediately
             self.toolbar.style().unpolish(self.toolbar)
@@ -2162,6 +2644,11 @@ class Notepad(QMainWindow):
     # File operations
     
     def new_file(self):
+        """
+        Create a new untitled document in the editor.
+        
+        If there are unsaved changes, prompts the user via warn_unsaved_changes() and only proceeds when the user confirms. Clears the text buffer, resets the current file path and unsaved-changes flag, and updates the window title to "Untitled - BunnyPad".
+        """
         if not self.unsaved_changes_flag or self.warn_unsaved_changes():
             self.textedit.clear()
             self.file_path = None
@@ -2170,6 +2657,11 @@ class Notepad(QMainWindow):
 
     
     def open_file(self):
+        """
+        Open a text file into the editor, enforcing a safe-size cap and handling unsaved changes.
+        
+        Prompts the user with an open-file dialog (using FILE_FILTERS["open"]). If the current document has unsaved changes, requests confirmation via warn_unsaved_changes(); if declined, the operation is cancelled. Before reading the file, enforces a 10 MB hard cap to avoid resource-exhaustion attacks—files larger than this are rejected with a warning. The file is read using UTF-8 with replacement for invalid bytes and loaded into the main QTextEdit; on success the window title, file_path, and unsaved state are updated. User-facing error dialogs are shown if the file size cannot be determined or the file cannot be opened/read.
+        """
         if self.unsaved_changes_flag:
             if not self.warn_unsaved_changes():
                 return
@@ -2211,6 +2703,17 @@ class Notepad(QMainWindow):
 
     
     def warn_unsaved_changes(self) -> bool:
+        """
+        Prompt the user to save modified document changes and act on their choice.
+        
+        Shows a modal warning dialog asking whether to Save, Discard, or Cancel when the current document is modified.
+        - If the user chooses Save, attempts to save via save_file() and returns that result (True on success).
+        - If the user chooses Discard, returns True to continue without saving.
+        - If the user chooses Cancel, returns False to abort the pending action.
+        
+        Returns:
+            bool: True to proceed (either saved successfully or changes discarded), False to cancel the operation.
+        """
         ret = QMessageBox.warning(
             self,
             "BunnyPad",
@@ -2248,6 +2751,14 @@ class Notepad(QMainWindow):
 
     
     def closeEvent(self, event):
+        """
+        Handle the window close event by asking the user to confirm exit, guarding against unsaved changes, and performing temporary-state cleanup.
+        
+        Displays a confirmation dialog (with special themed messages on specific anniversary dates). If the user cancels, the close event is ignored. If the user confirms and there are unsaved changes, calls self.warn_unsaved_changes() to allow the user to save/discard/cancel; only proceeds to close if that call indicates it is safe to do so. On successful exit, calls self.cleanupTemp() and accepts the close event.
+        
+        Parameters:
+            event (QCloseEvent): The close event provided by Qt; this method will call event.ignore() to cancel closing or event.accept() to allow it.
+        """
         today = datetime.date.today()
         leroy_anniv = datetime.date(today.year, 4, 11)
         undertale_anniv = datetime.date(today.year, 9, 15)  # Set correct Undertale anniversary
@@ -2313,6 +2824,12 @@ class Notepad(QMainWindow):
 
 
     def handle_text_changed(self):
+        """
+        Mark the document as modified and update the window title to reflect unsaved changes.
+        
+        Sets the instance's `unsaved_changes_flag` to True and prepends an asterisk (*) to the window title.
+        If a file is associated with the editor (`self.file_path`), the title shows the base filename; otherwise it shows "Untitled".
+        """
         self.unsaved_changes_flag = True
         if self.file_path:
             self.setWindowTitle(f"*{os.path.basename(self.file_path)} - BunnyPad")
@@ -2405,10 +2922,20 @@ class Notepad(QMainWindow):
 
     
     def download(self):
+        """
+        Open the Download Options dialog as a modal window.
+        
+        Displays the DownloadOptions dialog and blocks until the user closes it. Intended to provide the user with various download links and actions.
+        """
         dlg = DownloadOptions()
         dlg.exec()
 
     def crypto_tool(self):
+        """
+        Open the integrated Cryptography tool.
+        
+        Currently this method displays the "feature not ready" dialog and does not launch the CryptoGUI. (Legacy code to open a single-instance CryptoGUI window exists but is disabled.)
+        """
         self.feature_not_ready()
         """
         Open the Cryptography tool window as a single instance,
@@ -2441,6 +2968,12 @@ class Notepad(QMainWindow):
             logger.exception("Failed to open CryptoGUI")"""
     
     def toggle_character_map(self, checked):
+        """
+        Show or hide the character map dock.
+        
+        Parameters:
+            checked (bool): True to show the Character Map dock, False to hide it.
+        """
         self.character_dock.setVisible(checked)
 
     
@@ -2505,6 +3038,17 @@ class Notepad(QMainWindow):
 
     
     def on_update_check_completed(self, release_info: dict):
+        """
+        Handle completion of an update check by showing an information dialog.
+        
+        If release_info contains a stable or prerelease entry with a `version`, the dialog
+        announces that new version (stable preferred). Otherwise the dialog informs the
+        user that no updates are available.
+        
+        Parameters:
+            release_info (dict): Result from the update checker thread; expected to contain
+                optional "stable" and/or "prerelease" mappings with a "version" string.
+        """
         if release_info:
             # show info using first available tag
             tag = release_info.get("stable", {}).get("version") or release_info.get("prerelease", {}).get("version")
@@ -2513,13 +3057,34 @@ class Notepad(QMainWindow):
             QMessageBox.information(self, self.tr("Update"), self.tr("No updates available."))
     
     def open_encryption_tool(self):
+        """
+        Open and display the text encryption dialog as a modal window.
+        
+        Creates a TextEncToolDialog with this object as its parent and runs it modally (blocking until the dialog closes).
+        """
         dlg = TextEncToolDialog(self)
         dlg.exec_()
 
     def onModificationChanged(self, changed: bool):
+        """
+        Mark the document as modified by setting the internal unsaved changes flag.
+        
+        Parameters:
+            changed (bool): Ignored; the method always marks the document state as having unsaved changes.
+        """
         self.unsaved_changes_flag = True
 
     def autoSave(self):
+        """
+        Auto-saves the current editor contents to a temporary session file under BUNNYPAD_TEMP.
+        
+        If there are no unsaved changes this is a no-op. For an open file (self.file_path set) it writes a ".bptmp"
+        file containing a TYPE:WITHPATH marker, the original file path, and the plain-text data. For an unnamed
+        buffer it writes "unsaved_note.bptmp" containing a TYPE:UNSAVED marker and a hex-encoded UTF-8 payload.
+        
+        After writing the temp file it calls self.saveState(path) to record session metadata, clears the document's
+        modified flag and resets self.unsaved_changes_flag.
+        """
         if not self.unsaved_changes_flag:
             return
 
@@ -2545,17 +3110,42 @@ class Notepad(QMainWindow):
         self.unsaved_changes_flag = False
 
     def saveState(self, path: str):
+        """
+        Save the given file path as the last opened file in the persistent state file.
+        
+        Writes a JSON object {"last_file": "<path>"} to the module STATE_FILE, overwriting any previous state.
+        
+        Parameters:
+            path (str): Path to the file to record as the last opened file.
+        """
         state = {"last_file": path}
         with open(STATE_FILE, "w") as f:
             json.dump(state, f)
 
     def loadState(self):
+        """
+        Return the previously saved last file path from the persistent state file.
+        
+        Checks for the module-level STATE_FILE; if present, loads its JSON and returns the value of the "last_file" key. If the state file does not exist or the key is absent, returns None.
+        """
         if os.path.exists(STATE_FILE):
             with open(STATE_FILE, "r") as f:
                 return json.load(f).get("last_file")
         return None
 
     def restoreSession(self):
+        """
+        Restore the editor session from the saved state file (if present).
+        
+        Reads the path returned by loadState() and, if that file exists, loads its contents expecting one of two session formats:
+        - [TYPE:UNSAVED]: the following lines are a hex-encoded UTF-8 snapshot of unsaved text. Decodes the hex (silently falls back to an empty string on decode errors), sets the editor contents and clears the current file path.
+        - [TYPE:WITHPATH]: the second line is treated as the original file path; the file content is taken from the section after a "[DATA]" marker. Sets the editor contents, restores file_path to the saved path, and marks the document as having unsaved changes.
+        
+        Side effects:
+        - Replaces the editor text via self.textedit.setPlainText(...)
+        - Updates self.file_path and self.unsaved_changes_flag accordingly.
+        - Relies on loadState() to supply the state file path; no exceptions are raised for malformed content (falls back to empty content).
+        """
         last_file = self.loadState()
         if last_file and os.path.exists(last_file):
             with open(last_file, "r", encoding="utf-8") as f:
@@ -2582,6 +3172,12 @@ class Notepad(QMainWindow):
                 self.unsaved_changes_flag = True
                 
     def cleanupTemp(self):
+        """
+        Remove temporary session files created under the application's temp directory.
+        
+        This deletes all files in BUNNYPAD_TEMP whose names end with ".bptmp" (ignoring any individual deletion errors),
+        and removes the DIRTY_FILE marker if it exists. No value is returned.
+        """
         for fname in os.listdir(BUNNYPAD_TEMP):
             if fname.endswith(".bptmp"):
                 try:
@@ -2597,6 +3193,9 @@ class Notepad(QMainWindow):
 # --------------------
 
 def main():
+    """
+    Start the BunnyPad Qt application: create QApplication, apply stylesheet or fallback style, instantiate and show the Notepad main window, and enter the Qt event loop. Exits the process with the application's return code when the event loop finishes.
+    """
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setOrganizationName(ORGANIZATION_NAME)
