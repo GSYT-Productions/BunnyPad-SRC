@@ -30,12 +30,14 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile= ; Change this to the appropriate file
-InfoBeforeFile=; Change this to the appropriate file
+; License shown in the wizard (compile-time path)
+LicenseFile={#BaseDir}\LICENSE
+; InfoBeforeFile={#BaseDir}\README.txt
 ; Remove the following line to run in administrative install mode (install for all users).
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputDir=; Change this to the appropriate folder
+; Use a repo-relative output dir
+OutputDir=output
 OutputBaseFilename=BunnyPad-PyQt5-v11
 SolidCompression=yes
 WizardStyle=modern
@@ -69,4 +71,5 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
 
