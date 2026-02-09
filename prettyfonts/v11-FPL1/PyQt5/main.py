@@ -312,8 +312,8 @@ def ensure_assets_available():
         if src.exists() and src.is_dir():
             shutil.copytree(src, ASSETS_BASE_DIR, dirs_exist_ok=True)
 
-from PyQt6.QtGui import QTextCursor
-QTextCursorEnd = QTextCursor.MoveOperation.End
+from PyQt5.QtGui import QTextCursor
+QTextCursorEnd = QTextCursor.End
 
 
 # -----------------------------
@@ -846,12 +846,13 @@ as part of an upcoming migration."""
 
         x = (self.width() - tw) // 2
         y = (self.height() - th) // 2 + fm.ascent()
-        from PyQt6.QtGui import QTextOption
+        from PyQt5.QtGui import QTextOption
         painter.drawText(
             self.rect(),
-            Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
+            Qt.AlignCenter | Qt.TextWordWrap,
             msg
-        )
+            )
+
 
 
     #
@@ -2150,13 +2151,12 @@ class Notepad(QMainWindow):
     
     def toggle_word_wrap(self):
         mode = self.textedit.lineWrapMode()
-        # toggle (PyQt6: use enum values)
-        if mode == QTextEdit.LineWrapMode.WidgetWidth:
-            self.textedit.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
+        # toggle (PyQt5: use top-level constants)
+        if mode == QTextEdit.WidgetWidth:
+            self.textedit.setLineWrapMode(QTextEdit.NoWrap)
         else:
-            self.textedit.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+            self.textedit.setLineWrapMode(QTextEdit.WidgetWidth)
 
-    
     def choose_font(self):
         font, ok = QFontDialog.getFont(self)
         if ok and font:
