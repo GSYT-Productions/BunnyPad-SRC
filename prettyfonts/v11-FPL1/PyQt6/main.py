@@ -9,7 +9,7 @@ r"""
                          |___/                  
 """
 
-import datetime, importlib, os, platform, subprocess, sys, textwrap, unicodedata, webbrowser, random, json
+import datetime, importlib, os, platform, subprocess, sys, textwrap, unicodedata, webbrowser, random, json, shutil, binascii
 
 from pathlib import Path
 
@@ -205,7 +205,7 @@ except ImportError as e:
 # App metadata
 # -----------------------------
 
-CURRENT_VERSION = "v11.1.27935.0101"
+CURRENT_VERSION = "v11.1.27935.0209"
 APP_NAME = "BunnyPad"
 ORGANIZATION_NAME = "GSYT Productions"
 VERSION_CODENAME = "Bun Valley (FPL 1)"
@@ -222,36 +222,48 @@ IS_ANDROID = sys.platform == "android"
 # Temp / state files
 # -----------------------------
 
-BUNNYPAD_TEMP = os.path.join(os.path.expanduser("~"), "BunnyPadTemp")
+BUNNYPAD_TEMP = Path(os.path.expanduser("~")) / "BunnyPadTemp"
+BUNNYPAD_TEMP.mkdir(parents=True, exist_ok=True)
 os.makedirs(BUNNYPAD_TEMP, exist_ok=True)
 
 STATE_FILE = os.path.join(BUNNYPAD_TEMP, "state.json")
 DIRTY_FILE = os.path.join(BUNNYPAD_TEMP, "dirty")
 
 # -----------------------------
-# Writable base directory
+# Detect platform
 # -----------------------------
+IS_ANDROID = sys.platform.startswith("android")  # simple flag for Android
 
+
+# -----------------------------
+# Base directories
+# -----------------------------
 def get_writable_base_dir() -> Path:
+    """
+    Returns a directory suitable for writing app data.
+    On Android, uses Qt's AppDataLocation.
+    On desktop, uses ~/.bunnypad
+    """
     if IS_ANDROID:
-        return Path(
-            QStandardPaths.writableLocation(
-                QStandardPaths.StandardLocation.AppDataLocation
-            )
-        )
-    return Path(os.path.expanduser("~")) / ".bunnypad"
+        path = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        return Path(path)
+    return Path.home() / ".bunnypad"
+
 
 APP_BASE_DIR = get_writable_base_dir()
 ASSETS_BASE_DIR = APP_BASE_DIR / "assets"
 
+
 # -----------------------------
 # Asset source location
 # -----------------------------
-
-def get_asset_source_root():
+def get_asset_source_root() -> Path:
+    """
+    Returns the root directory of bundled assets.
+    Handles Android (Qt resources), PyInstaller, and normal Python execution.
+    """
     if IS_ANDROID:
-        # Assets bundled via Qt resources
-        return ":/assets"
+        return Path(":/assets")  # Qt resource prefix
 
     if getattr(sys, "frozen", False):
         # PyInstaller bundle
@@ -260,15 +272,19 @@ def get_asset_source_root():
     # Normal Python execution
     return Path(__file__).parent.resolve() / "assets"
 
+
 # -----------------------------
 # Runtime asset extraction
 # -----------------------------
 
 def copy_qt_resource_tree(qt_prefix: str, target_dir: Path):
+    """
+    Recursively copies Qt resource tree to a writable target directory.
+    """
     target_dir.mkdir(parents=True, exist_ok=True)
     qdir = QDir(qt_prefix)
 
-    for entry in qdir.entryList(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot):
+    for entry in qdir.entryList(QDir.AllEntries | QDir.NoDotAndDotDot):
         src = f"{qt_prefix}/{entry}"
         dst = target_dir / entry
 
@@ -278,20 +294,27 @@ def copy_qt_resource_tree(qt_prefix: str, target_dir: Path):
         else:
             copy_qt_resource_tree(src, dst)
 
+
 def ensure_assets_available():
-    if ASSETS_BASE_DIR.exists():
-        return
+    """
+    Ensure that the assets directory exists and is populated.
+    Copies assets from source if necessary.
+    """
+    if ASSETS_BASE_DIR.exists() and any(ASSETS_BASE_DIR.iterdir()):
+        return  # Already exists and not empty
 
     src = get_asset_source_root()
     ASSETS_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
     if IS_ANDROID:
-        copy_qt_resource_tree(src, ASSETS_BASE_DIR)
+        copy_qt_resource_tree(str(src), ASSETS_BASE_DIR)
     else:
-        shutil.copytree(src, ASSETS_BASE_DIR, dirs_exist_ok=True)
+        if src.exists() and src.is_dir():
+            shutil.copytree(src, ASSETS_BASE_DIR, dirs_exist_ok=True)
 
-# 🔴 Call this early during startup
-ensure_assets_available()
+from PyQt6.QtGui import QTextCursor
+QTextCursorEnd = QTextCursor.MoveOperation.End
+
 
 # -----------------------------
 # Asset paths
@@ -302,41 +325,50 @@ IMAGES_DIR = ASSETS_DIR / "images" / "icons"
 BRANDING_DIR = ASSETS_DIR / "images" / "branding"
 QSS_DIR = ASSETS_DIR / "qss"
 
+# Use a small helper to reduce repetition
+def asset_path(*parts: str) -> str:
+    return str(Path(*parts))
+
 ICON_PATHS = {
-    "bunnypad": str(BRANDING_DIR / "bunnypad.png"),
-    "gsyt": str(BRANDING_DIR / "gsyt.png"),
-    "bpdl": str(BRANDING_DIR / "bpdl.png"),
-    "new": str(IMAGES_DIR / "new.png"),
-    "open": str(IMAGES_DIR / "open.png"),
-    "save": str(IMAGES_DIR / "save.png"),
-    "saveas": str(IMAGES_DIR / "saveas.png"),
-    "exit": str(IMAGES_DIR / "exit.png"),
-    "undo": str(IMAGES_DIR / "undo.png"),
-    "redo": str(IMAGES_DIR / "redo.png"),
-    "cut": str(IMAGES_DIR / "cut.png"),
-    "copy": str(IMAGES_DIR / "copy.png"),
-    "paste": str(IMAGES_DIR / "paste.png"),
-    "delete": str(IMAGES_DIR / "delete.png"),
-    "datetime": str(IMAGES_DIR / "datetime.png"),
-    "charmap": str(IMAGES_DIR / "charmap.png"),
-    "find": str(IMAGES_DIR / "find.png"),
-    "replace": str(IMAGES_DIR / "replace.png"),
-    "selectall": str(IMAGES_DIR / "selectall.png"),
-    "wordwrap": str(IMAGES_DIR / "wordwrap.png"),
-    "font": str(IMAGES_DIR / "font.png"),
-    "info": str(IMAGES_DIR / "info.png"),
-    "team": str(IMAGES_DIR / "team.png"),
-    "cake": str(IMAGES_DIR / "cake.png"),
-    "nocake": str(IMAGES_DIR / "nocake.png"),
-    "support": str(IMAGES_DIR / "support.png"),
-    "share": str(IMAGES_DIR / "share.png"),
-    "update": str(IMAGES_DIR / "update.png"),
-    "pdf": str(IMAGES_DIR / "pdf.png"),
-    "printer": str(IMAGES_DIR / "printer.png"),
-    "encryption": str(IMAGES_DIR / "encryption.png"),
-    "status": str(IMAGES_DIR / "status.png"),
-    "toolbar": str(IMAGES_DIR / "toolbar.png"),
+    "bunnypad": asset_path(BRANDING_DIR, "bunnypad.png"),
+    "gsyt": asset_path(BRANDING_DIR, "gsyt.png"),
+    "bpdl": asset_path(BRANDING_DIR, "bpdl.png"),
+    "new": asset_path(IMAGES_DIR, "new.png"),
+    "open": asset_path(IMAGES_DIR, "open.png"),
+    "save": asset_path(IMAGES_DIR, "save.png"),
+    "saveas": asset_path(IMAGES_DIR, "saveas.png"),
+    "exit": asset_path(IMAGES_DIR, "exit.png"),
+    "undo": asset_path(IMAGES_DIR, "undo.png"),
+    "redo": asset_path(IMAGES_DIR, "redo.png"),
+    "cut": asset_path(IMAGES_DIR, "cut.png"),
+    "copy": asset_path(IMAGES_DIR, "copy.png"),
+    "paste": asset_path(IMAGES_DIR, "paste.png"),
+    "delete": asset_path(IMAGES_DIR, "delete.png"),
+    "datetime": asset_path(IMAGES_DIR, "datetime.png"),
+    "charmap": asset_path(IMAGES_DIR, "charmap.png"),
+    "find": asset_path(IMAGES_DIR, "find.png"),
+    "replace": asset_path(IMAGES_DIR, "replace.png"),
+    "selectall": asset_path(IMAGES_DIR, "selectall.png"),
+    "wordwrap": asset_path(IMAGES_DIR, "wordwrap.png"),
+    "font": asset_path(IMAGES_DIR, "font.png"),
+    "info": asset_path(IMAGES_DIR, "info.png"),
+    "team": asset_path(IMAGES_DIR, "team.png"),
+    "cake": asset_path(IMAGES_DIR, "cake.png"),
+    "nocake": asset_path(IMAGES_DIR, "nocake.png"),
+    "support": asset_path(IMAGES_DIR, "support.png"),
+    "share": asset_path(IMAGES_DIR, "share.png"),
+    "update": asset_path(IMAGES_DIR, "update.png"),
+    "pdf": asset_path(IMAGES_DIR, "pdf.png"),
+    "printer": asset_path(IMAGES_DIR, "printer.png"),
+    "encryption": asset_path(IMAGES_DIR, "encryption.png"),
+    "status": asset_path(IMAGES_DIR, "status.png"),
+    "toolbar": asset_path(IMAGES_DIR, "toolbar.png"),
 }
+
+# -----------------------------
+# Initialize assets at startup
+# -----------------------------
+ensure_assets_available()
 
 # -----------------------------
 # File filters
@@ -1595,7 +1627,7 @@ class Notepad(QMainWindow):
         self.textedit = QTextEdit()
         self.textedit.setAcceptRichText(False)
         self.setCentralWidget(self.textedit)
-        
+        self.textedit.document().setModified(False)
         # --- Connect modification signal ---
         self.textedit.document().modificationChanged.connect(self.onModificationChanged)
 
@@ -1616,7 +1648,7 @@ class Notepad(QMainWindow):
         self.character_dock = QDockWidget(QCoreApplication.translate("MainWindow", "Character Map"), self)
         self.character_dock.setWidget(self.character_map)
         self.character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
-        # 🔹 Theme toggling for dock when floating / docked
+        # Theme toggling for dock when floating / docked
         def _char_dock_theme(floating):
             if floating:
                 self.character_dock.setObjectName("FloatingWindow")
@@ -1923,44 +1955,70 @@ class Notepad(QMainWindow):
 
     
     def open_file(self):
+        """Memory-safe file opener for low-RAM devices (patch CVE-2025-59418)."""
         if self.unsaved_changes_flag:
             if not self.warn_unsaved_changes():
                 return
 
-        file_types = FILE_FILTERS["open"]
-        path, _ = QFileDialog.getOpenFileName(self, self.tr("Open File"), "", file_types)
+        path, _ = QFileDialog.getOpenFileName(self, self.tr("Open File"), "", FILE_FILTERS["open"])
         if not path:
             return
+        self.statusBar().showMessage("Loading...")
+        QApplication.processEvents()
+        
+        CHUNK_SIZE = 64 * 1024  # 64 KB chunks
+        MAX_QTEXTEDIT_CHARS = 2_000_000  # ~2M chars to stay safe on 512MB RAM
 
-        # Temporary safeguard: 10 MB hard cap to prevent resource-exhaustion DoS
-        MAX_SAFE_SIZE = 10 * 1024 * 1024  # 10 MB
         try:
-            file_size = os.path.getsize(path)
-        except Exception:
-            QMessageBox.critical(self, self.tr("Error"), self.tr("Cannot determine file size."))
-            return
+            self.textedit.clear()
+            total_chars = 0
 
-        if file_size > MAX_SAFE_SIZE:
-            QMessageBox.warning(
-                self,
-                self.tr("File too large"),
-                self.tr(
-                    "This file exceeds 10 MB and cannot be opened safely.\n"
-                    "This is a temporary safeguard against a reported resource-exhaustion vulnerability."
-                )
-            )
-            return
+            with open(path, "rb") as f:
+                while True:
+                    chunk = f.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
 
-        # Safe to open
-        try:
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
-                self.textedit.setPlainText(f.read())
+                    try:
+                        text_chunk = chunk.decode("utf-8")
+                    except UnicodeDecodeError:
+                        text_chunk = chunk.decode("latin-1")
+
+                    # truncate chunk if necessary
+                    remaining = MAX_QTEXTEDIT_CHARS - total_chars
+                    if remaining <= 0:
+                        QMessageBox.warning(
+                            self,
+                            self.tr("File truncated"),
+                            self.tr(
+                                "This document is too large to be safely loaded and has been truncated "
+                                "to prevent memory exhaustion (CVE-2025-59418)."
+                            ),
+                        )
+                        break
+
+                    if len(text_chunk) > remaining:
+                        text_chunk = text_chunk[:remaining]
+
+                    # insert immediately
+                    self.textedit.moveCursor(QTextCursorEnd)
+                    self.textedit.insertPlainText(text_chunk)
+                    total_chars += len(text_chunk)
+
             self.file_path = path
             self.unsaved_changes_flag = False
+            self.textedit.document().setModified(False)
             self.setWindowTitle(f"{os.path.basename(path)} - BunnyPad")
-        except Exception:
-            QMessageBox.critical(self, self.tr("Error"), self.tr("Unicode Error: Cannot open file"))
-    
+            self.statusBar().showMessage("")  # clear status bar after loading
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                self.tr("Error"),
+                self.tr(f"Cannot open file: {e}")
+            )
+            self.statusBar().showMessage("")  # clear even on error
+
     def warn_unsaved_changes(self) -> bool:
         ret = QMessageBox.warning(
             self,
@@ -2261,9 +2319,7 @@ class Notepad(QMainWindow):
                 f.write("[TYPE:UNSAVED]\n")
                 f.write(encoded)
             self.saveState(temp_path)
-
-        self.textedit.document().setModified(False)
-        self.unsaved_changes_flag = False
+        self.statusBar().showMessage("Autosaved", 2000)
 
     def saveState(self, path: str):
         state = {"last_file": path}
@@ -2292,25 +2348,36 @@ class Notepad(QMainWindow):
                 self.file_path = None
 
             elif lines[0].startswith("[TYPE:WITHPATH]"):
-                path = lines[1].strip()
-                try:
-                    sep_index = lines.index("[DATA]\n")
-                    content = "".join(lines[sep_index + 1:])
-                except ValueError:
+                # Safely get path
+                path = lines[1].strip() if len(lines) > 1 else None
+
+                # Find "[DATA]" line safely
+                data_index = None
+                for i, line in enumerate(lines):
+                    if line.strip() == "[DATA]":
+                        data_index = i
+                        break
+
+                if data_index is not None:
+                    content = "".join(lines[data_index + 1:])
+                else:
                     content = ""
+
+                # Apply content to textedit
                 self.textedit.setPlainText(content)
                 self.file_path = path
                 self.unsaved_changes_flag = True
+                self.textedit.document().setModified(True)
+
                 
     def cleanupTemp(self):
-        for fname in os.listdir(BUNNYPAD_TEMP):
-            if fname.endswith(".bptmp"):
-                try:
-                    os.remove(os.path.join(BUNNYPAD_TEMP, fname))
-                except Exception:
-                    pass
-        if os.path.exists(DIRTY_FILE):
-            os.remove(DIRTY_FILE)
+        if BUNNYPAD_TEMP.exists():
+            for fname in BUNNYPAD_TEMP.iterdir():
+                if fname.suffix == ".bptmp":
+                    try:
+                        fname.unlink()
+                    except Exception:
+                        pass
 
 
 # --------------------
