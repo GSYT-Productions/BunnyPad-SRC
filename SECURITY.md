@@ -6,10 +6,10 @@ The following versions are currently being supported with security updates
 
 | Version | Supported          |
 | ----------------------- | ------------------ |
-| 10.0 Latest Snapshots   | :white_check_mark: |
-| 10.0 Older Snapshots    | :x:                |
-| 9.0 Public Release      | :white_check_mark: |
-| < 9.0 Public or Snap    | :x:                |
+| 10.1 Latest Snapshots   | :white_check_mark: |
+| 10.1 Older Snapshots    | :x:                |
+| 10.0 Public Release      | :white_check_mark: |
+| < 10.0 Public or Snap    | :x:                |
 
 ## Reporting a Vulnerability
 

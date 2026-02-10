@@ -24,17 +24,17 @@ Please check for existing issues first. For new issues, include as much detail a
 We welcome your ideas. Make sure they align with the project’s goals. Clearly and thoroughly describe the feature, providing context and reasons for its inclusion.
 
 # 🚀 Feature Branch
-Our `latest-carrotpatch` branch is where the magic happens for unstable builds. Feel free to pull from and contribute to this branch if you like living on the edge.
+Our `testing` branch is where the magic happens for unstable builds. Feel free to pull from and contribute to this branch if you like living on the edge.
 🛠 Pull Requests
 To get your code into BunnyPad:
 
-- Fork the repo, then create your branch from `latest-carrotpatch`.
+- Fork the repo, then create your branch from `testing`.
 - Make your changes and add any tests necessary.
 - Ensure the test suite passes.
 - Submit a pull request with detailed information about the contribution.
 
 # 📄 License
-BunnyPad’s Source Code is under the MIT license — review it here: [LICENSE.md](LICENSE.md). Contributions should comply with this license.
+BunnyPad’s Source Code is under the Apache 2.0 license — review it here: [LICENSE.md](LICENSE.md). Contributions should comply with this license.
 
 # 💬 Questions or Help?
 Got questions? Just open an issue with a 'question' label, and we'll get back to you.

@@ -1,0 +1,13 @@
+Compatibility Notice:
+BunnyPad CANNOT AND WILL NOT work on the following Windows Versions:
+Any 32-bit Windows (or Windows Servers), Windows 2000, Windows Me, Windows 95, Windows 98
+
+BunnyPad will PROBABLY work on the following Windows Versions:
+Windows 7 RTM, Windows XP x64 (requires OneCore API), Windows Vista, or their server equivalents
+
+BunnyPad will work on the following Windows Versions IF Visual C Redistributable 2015 is installed:
+Windows 7 SP1, Windows 8.0, Windows 8.1, Windows 10 1507, or their server equivalents
+
+BunnyPad will work Out of the box on the following Windows versions:
+Windows 10, Windows 11, or their server equivalents.
+For Windows 10 1809 or newer, it is recommended to use the PyQt6 variant
