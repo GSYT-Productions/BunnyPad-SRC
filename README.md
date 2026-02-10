@@ -19,7 +19,7 @@ It is suggested/requested but not required for modifications to be submitted bac
 
 Local (GitHub) Downloads: [![Github All Releases](https://img.shields.io/github/downloads/GSYT-Productions/BunnyPad-SRC/total.svg)]()
 
-Itch.io Downloads: 293 [I have to change this manually]
+Itch.io Downloads: 312 [I have to change this manually]
 
 SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourceforge/dt/bunnypad)
 
@@ -27,16 +27,14 @@ SourceForge Downloads: ![SourceForge Downloads](https://img.shields.io/sourcefor
 These people helped get the program to its current state:
 
 PBbunnypower - The Star of the Show, she created the icon of the app, and the project is dedicated to her\
-BunnyFndr - Main Co-developer\
+~~BunnyFndr - Main Co-developer~~\
 GarryStraitYT - Main Developer\
 ZeRoTeCh00 - Promoted BunnyPad during stream\
 Unity Pixelheart - Helped with bug checking the program\
-ByPad - Porting to Linux\
-i486girl and K4sum1 - Helping with ideas\
+~~ByPad - Porting to Linux~~\
+~~i486girl and K4sum1 - Helping with ideas~~\
 Wolfieboy09 - Contributor, Bug Hunter\
 teknixstuff - Debugging, assisting with try:except statements
-### License and Trademark Usage
-
 
 ## Stats!
 ![Stars](https://api.star-history.com/svg?repos=GSYT-Productions/BunnyPad-SRC&type=Date)
