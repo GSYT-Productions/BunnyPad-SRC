@@ -1,0 +1,9 @@
+BunnyPad Theme Usage Notice
+
+BunnyPad now supports per-user customization. Users can edit their theme by modifying:
+   %USERPROFILE%\.bunnypad\qss\stylesheet.qss
+
+To reset to the default theme, delete or rename the ".bunnypad" folder in your user directory.
+
+Support Tech Stuff (teknixstuff):
+https://teknixstuff.com/Network/Donate/
