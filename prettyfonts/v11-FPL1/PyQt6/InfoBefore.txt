@@ -1,0 +1,2 @@
+Compatibility Notice:
+this variant only works on Window 10 1809+, Windows 11 and the server verions of these OSes due to use of the PyQt6 library
