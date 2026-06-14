@@ -30,8 +30,7 @@ except Exception:
     FPDF = None
 
 # PyQt6 imports
-try:
-    from PyQt6.QtCore import (
+from PyQt6.QtCore import (
         QCoreApplication,
         QFile,
         QPoint,
@@ -41,9 +40,9 @@ try:
         QThread,
         QTimer
     )
-    from PyQt6.QtCore import pyqtSignal as Signal
-    from PyQt6.QtCore import pyqtSlot as Slot
-    from PyQt6.QtGui import (
+from PyQt6.QtCore import pyqtSignal as Signal
+from PyQt6.QtCore import pyqtSlot as Slot
+from PyQt6.QtGui import (
         QColor,
         QFont,
         QFontMetrics,
@@ -58,8 +57,8 @@ try:
         QPaintEvent,
         QAction,  # moved here from QtWidgets
     )
-    from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
-    from PyQt6.QtWidgets import (
+from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
+from PyQt6.QtWidgets import (
         QApplication,
         QCheckBox,
         QDialog,
@@ -92,113 +91,6 @@ try:
         QSplitter,
         QBoxLayout
     )
-
-except ImportError as e:
-    print(f"Missing required dependency: {e}")
-    print("Attempting to install dependencies...")
-    
-    
-    def is_module_available(module_name):
-        """Check if a module is available before importing."""
-        return importlib.util.find_spec(module_name) is not None
-
-    
-    def is_debian_based():
-        """Determine if the OS is Debian-based securely."""
-        if is_module_available("distro"):
-            import distro
-            return distro.id().lower() in [
-                "debian", "ubuntu", "linuxmint", "pop", "elementary", 
-                "kali", "raspbian"
-            ]
-        return False
-
-    
-    def install_with_pip(pip_cmd):
-        """
-        Install required Python packages using the provided pip command.
-        
-        This runs the given pip executable (e.g. "pip", "pip3", or a virtualenv pip path) with
-        --no-cache-dir to install a fixed set of runtime dependencies required by the application.
-        On installation failure the process will print an error and terminate the interpreter.
-        
-        Parameters:
-            pip_cmd (str): The pip executable or command to invoke.
-        
-        Side effects:
-            Exits the process with status code 1 if installation fails.
-        """
-        try:
-            subprocess.run([
-                pip_cmd, "install", "--no-cache-dir",
-                "PyQt6", "distro", "fpdf", "setuptools", "requests"
-            ], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to install dependencies: {e}")
-            sys.exit(1)
-
-    
-    def create_venv(venv_dir):
-        """Create a virtual environment if it does not already exist."""
-        if not os.path.exists(venv_dir):
-            print(f"Creating virtual environment at {venv_dir}...")
-            try:
-                subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
-                return True
-            except subprocess.CalledProcessError:
-                print("Error: Failed to create virtual environment.")
-                return False
-        return True
-
-    # Virtual environment directory
-    venv_dir = os.path.join(os.getcwd(), "venv")
-    venv_pip = (
-        os.path.join(venv_dir, "bin", "pip")
-        if platform.system() != "Windows"
-        else os.path.join(venv_dir, "Scripts", "pip.exe")
-    )
-    
-    # Check if we are already in a virtual environment
-    if hasattr(sys, "real_prefix") or (
-        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
-    ):
-        print("Virtual environment detected. Installing dependencies...")
-        install_with_pip(
-            os.path.join(sys.prefix, "bin", "pip")
-            if platform.system() != "Windows"
-            else os.path.join(sys.prefix, "Scripts", "pip.exe")
-        )
-    # On Debian-based systems, prefer pipx, but fall back to venv if needed
-    elif is_debian_based():
-        if shutil.which("pipx"):
-            print("Using pipx to install dependencies...")
-            try:
-                subprocess.run([
-                    "pipx", "install", "PyQt6", "distro", "fpdf", 
-                     "setuptools", "requests"
-                ], check=True)
-            except subprocess.CalledProcessError:
-                print("Warning: pipx installation failed. Attempting venv...")
-                if create_venv(venv_dir):
-                    install_with_pip(venv_pip)
-                else:
-                    print("Error: Neither pipx nor venv is available.")
-                    sys.exit(1)
-        else:
-            print("Warning: pipx is not installed. Attempting venv...")
-            if create_venv(venv_dir):
-                install_with_pip(venv_pip)
-            else:
-                print("Error: Neither pipx nor venv is available.")
-                sys.exit(1)
-    # On other Linux distros and Windows, use venv if not already present
-    else:
-        if create_venv(venv_dir):
-            print("Using virtual environment's pip.")
-            install_with_pip(venv_pip)
-        else:
-            print("Error: Failed to create virtual environment.")
-            sys.exit(1)
 
 
 # -----------------------------
@@ -772,116 +664,6 @@ def get_system_info() -> str:
     except Exception:
         return "System information not available"
 
-class CharacterWidget(QWidget):
-    characterSelected = Signal(str)
-    closed = Signal()
-
-    def __init__(self, parent=None, as_window=False):
-        flags = Qt.WindowType.Window if as_window else Qt.WindowType.Widget
-        super().__init__(parent, flags)
-
-        self._as_window = as_window
-        self._disabled = True  # The key flag
-
-        if self._as_window:
-            self.setObjectName("FloatingWindow")
-            QMessageBox.information(
-                self,
-                "Feature Disabled",
-                "The character map feature is disabled due to an upcoming migration."
-            )
-
-        # Ensure the widget has a reasonable default size
-        self.display_font = QFont()
-        self.square_size = 32
-        self.columns = 8
-        self.total_characters = 256
-
-        # Hide physical interaction
-        self.setEnabled(False)
-
-    #
-    # === EVENT OVERRIDES (all interaction suppressed) ===
-    #
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self._disabled:
-            return
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        if self._disabled:
-            return
-
-    def closeEvent(self, event):
-        self.closed.emit()
-        super().closeEvent(event)
-
-    #
-    # === DISABLED PAINT EVENT ===
-    #
-    def paintEvent(self, event: QPaintEvent) -> None:
-        """
-        Draw a centered 'feature disabled' message.
-        No grid, no characters, no expensive rendering.
-        """
-        painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor(50, 50, 50))
-
-        painter.setPen(QColor("white"))
-        font = QFont(self.display_font)
-        font.setPointSize(14)
-        font.setBold(True)
-        painter.setFont(font)
-
-        msg = """Character Map Feature Disabled
-
-BunnyPad is undergoing some major changes.
-As part of these changes, certain functions will be disabled
-as part of an upcoming migration."""
-
-        fm = QFontMetrics(font)
-
-        tw = fm.horizontalAdvance(msg)
-        th = fm.height()
-
-        x = (self.width() - tw) // 2
-        y = (self.height() - th) // 2 + fm.ascent()
-        from PyQt6.QtGui import QTextOption
-        painter.drawText(
-            self.rect(),
-            Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
-            msg
-        )
-
-
-    #
-    # === BASIC SIZING (matches original layout expectations) ===
-    #
-    def sizeHint(self) -> QSize:
-        return QSize(self.columns * self.square_size,
-                     (self.total_characters // self.columns) * self.square_size)
-
-    #
-    # === API-COMPAT SHIMS ===GetModuleHandle(L"ntdlx.dll") != NULL
-    #
-
-    def setColumns(self, columns: int):
-        """Keep signature intact for compatibility."""
-        pass
-
-    def set_unicode_range(self, name: str) -> bool:
-        return False
-
-    def get_codepoint_from_position(self, x: int, y: int) -> int:
-        return -1
-
-    def isValidCharacter(self, ch: str) -> bool:
-        return False
-
-    @staticmethod
-    def _chr(cp: int) -> str:
-        return ""
-
 # --------------------
 # Dialog classes (preserve original behavior/easter eggs)
 # --------------------
@@ -957,21 +739,6 @@ class AboutDialog(QDialog):
 
         layout.addWidget(QLabel(APP_NAME + self.tr(" is licensed under the Apache 2.0 License")))
 
-        original_phrase = "pet the bunny"
-        anagrams = [
-            "tnentbpu y he",
-            "the pet bunny",
-            "tnebyt uhn pe",
-            "eupntbeyh  tn",
-            "ehtueyn pbn t",
-            "the bunny pet",
-            "bunny pet the",
-            "phube yent tn",
-            "tp ne tuenyhb",
-            "tnentbpu y he",
-            original_phrase,
-        ]
-        selected_anagram = random.choice(anagrams)
         phrases = [
             self.tr('"It was a pleasure to [learn]"'),
             self.tr(
@@ -1001,7 +768,7 @@ class AboutDialog(QDialog):
                 "\"two sides of a question to worry about. Just give 'em one.. \"\n"
                 "\"Better yet, none.\\\"\""
             ),
-            selected_anagram,
+            "pet the bunny",
             "Cito - ad posteriorem illius lucernae formae confugite.",
             "celeriter, post illam lucernam commode formatam",
             "Make haste-bethink thyself abaft that fortuitously contoured lantern.",
@@ -1015,7 +782,8 @@ class AboutDialog(QDialog):
             "Yes, that was totally the correct shortcut… maybe.",
             "I hope you enjoy your new file name… whatever it is.",
             "I'm not judging… okay, maybe a little.",
-            "Ah, you're still here. I was worried for a second."
+            "Ah, you're still here. I was worried for a second.",
+            "Feel free to check out CharaROM!"
         ]
         random_phrase = random.choice(phrases)
         layout.addWidget(QLabel(random_phrase))
@@ -1167,14 +935,9 @@ class CreditsDialog(QDialog):
         layout.addWidget(
             QLabel(
                 self.tr(
-                    "GarryStraitYT: Lead Developer; PBbunnypower (Bunny): Main icon design, project dedicated to her\n\n"
+                    "GarryStraitYT (Chara): Lead Developer; PBbunnypower (Bunny): Main icon design, project dedicated to her\n\n"
                 )
-                + "I-San: "
-                + self.tr("Beta Tester\n")
-                + "DinoDude: "
-                + self.tr("Github contributor\n")
-                + "BunnyFndr: "
-                + self.tr("Icon Finder and Bug Tester")
+                + self.tr("Former contributors have been removed for various reasons.")
             )
         )
         for i in range(layout.count()):
@@ -1397,8 +1160,8 @@ class ContactUs(QDialog):
 
         info_label = QLabel(
             "Website: <a href='http://bunnypad.eclipse.cx' style=\"color: #0078D7;\">http://bunnypad.eclipse.cx/</a> <br> "
-            "GSYT Productions Server: <a href='https://guilded.gg/gsyt-productions' style=\"color: #0078D7;\">https://guilded.gg/gsyt-productions</a> <br> "
-            "BunnyPad CarrotPatch Server: <a href='https://guilded.gg/bunnypad' style=\"color: #0078D7;\">https://guilded.gg/bunnypad</a><br>"
+            "Telegram Chat: <a href='https://t.me/bunnypaddev' style=\"color: #0078D7;\">https://t.me/bunnypaddev</a> <br> "
+            "CharaROM Website: <a href='https://chararom.xyz' style=\"color: #0078D7;\">https://chararom.xyz</a><br>"
             "BunnyPad Donation Link: <a href='https://throne.com/bunnypad' style=\"color: #0078D7;\">https://throne.com/bunnypad</a> <br> "
             "Text Us: +1 (814) 204-2333"
         )
@@ -1446,7 +1209,7 @@ class DownloadOptions(QDialog):
             "BunnyPad Donation": "BunnyPad Donation",
             "Customizer": "Customizer",
             "Tech Stuff Website": "Tech Stuff Website",
-            "r3dfox Download": "r3dfox Download",
+            "CharaROM Download": "CharaROM Download",
             "Donate to Tech Stuff": "Donate to Tech Stuff",
             "Join the Legacy Enthusiasm Discord": "Join the Legacy Enthusiasm Discord",
         }
@@ -1497,8 +1260,8 @@ class DownloadOptions(QDialog):
         webbrowser.open("https://teknixstuff.com")
 
     
-    def on_r3dfox_download_clicked(self):
-        webbrowser.open("https://github.com/Eclipse-Community/r3dfox/releases/")
+    def on_chararom_download_clicked(self):
+        webbrowser.open("https://github.com/chararomandroid")
 
     def on_donate_to_tech_stuff_clicked(self):
         webbrowser.open("https://teknixstuff.com/Network/Donate/")
