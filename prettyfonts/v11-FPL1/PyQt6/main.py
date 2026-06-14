@@ -9,7 +9,7 @@ r"""
                          |___/                  
 """
 
-import datetime, importlib, os, platform, subprocess, sys, textwrap, unicodedata, webbrowser, random, json, shutil, binascii
+import datetime, importlib, os, platform, subprocess, sys, textwrap, unicodedata, webbrowser, random, json, shutil, binascii, re
 
 from pathlib import Path
 
@@ -92,18 +92,67 @@ from PyQt6.QtWidgets import (
         QBoxLayout
     )
 
+# -----------------------------
+# Dirty Detection
+# -----------------------------
+def is_git_dirty() -> bool:
+    """
+    Checks if the git repository has uncommitted changes outside of the languages/ directory.
+    Matches the logic of the reference Bash script adjusted for this project.
+    """
+    try:
+        # 1. Run git status (porcelain, ignoring untracked files)
+        status_cmd = ["git", "--no-optional-locks", "status", "-uno", "--porcelain"]
+        status_output = subprocess.check_output(status_cmd, stderr=subprocess.DEVNULL, text=True)
+        
+        # 2. Run git diff-index as a supplemental check
+        diff_cmd = ["git", "diff-index", "--name-only", "HEAD"]
+        diff_output = subprocess.check_output(diff_cmd, stderr=subprocess.DEVNULL, text=True)
+        
+        # Combine tracking lines from both outputs
+        combined_lines = status_output.splitlines() + diff_output.splitlines()
+        
+        if not combined_lines:
+            return False
 
+        # 3. Replicate 'grep -qvE' targeting the languages/ directory
+        # Matches paths starting with 'languages/' or prefixed by git status codes (e.g., 'M  languages/')
+        ignore_pattern = re.compile(r'^(?:.. )?languages/')
+        
+        for line in combined_lines:
+            line = line.strip()
+            if not line:
+                continue
+            # If a modified file path does NOT match 'languages/', the build is dirty
+            if not ignore_pattern.match(line):
+                return True
+                
+        return False
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to safe state if git command fails or isn't a repo
+        return False
+
+def get_version_string() -> str:
+    """Appends -dirty to the version if the repository has relevant modifications."""
+    if is_git_dirty():
+        return f"{BASE_VERSION}-dirty"
+    return BASE_VERSION
+    
 # -----------------------------
 # App metadata
 # -----------------------------
 
-CURRENT_VERSION = "v11.1.27935.0209"
+MAJOR_VERSION = "11"
+MINOR_VERSION = "1"
+PATCH_LEVEL = "002"
+BASE_VERSION = f"v{MAJOR_VERSION}.{MINOR_VERSION}.{PATCH_LEVEL}"
+CURRENT_VERSION = get_version_string()
 APP_NAME = "BunnyPad"
 ORGANIZATION_NAME = "GSYT Productions"
 VERSION_CODENAME = "Bun Valley (FPL 1)"
 REPO_OWNER = "GSYT-Productions"
 REPO_NAME = "BunnyPad-SRC"
-
 # -----------------------------
 # Platform detection
 # -----------------------------
@@ -716,7 +765,7 @@ class AboutDialog(QDialog):
         pix.setDevicePixelRatio(self.devicePixelRatioF())
         if not pix.isNull():
             logo.setPixmap(pix)
-        logo.set_click_handler(self.activate_skillsusa_easter_egg)
+        # logo.set_click_handler(self.activate_skillsusa_easter_egg)
         layout.addWidget(logo)
 
         layout.addWidget(
@@ -816,20 +865,6 @@ class AboutDialog(QDialog):
         self.adjustSize()
         self.setMinimumSize(self.sizeHint())
 
-    
-    def activate_skillsusa_easter_egg(self, event):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle(self.tr("SkillsUSA 2025"))
-        msg_box.setWindowIcon(QIcon(get_icon_path("bunnypad")))
-        msg_box.setText(
-            self.tr(
-                "No matter what comes our way\n"
-                "No matter what they say\n"
-                "Our victory is essential\n"
-                "We will IGNITE OUR POTENTIAL!"
-            )
-        )
-        msg_box.exec()
 
 # nice job for paying attention :D
 
@@ -935,7 +970,7 @@ class CreditsDialog(QDialog):
         layout.addWidget(
             QLabel(
                 self.tr(
-                    "GarryStraitYT (Chara): Lead Developer; PBbunnypower (Bunny): Main icon design, project dedicated to her\n\n"
+                    "Chara: Lead Developer\n PBbunnypower: Main icon designer\n\n"
                 )
                 + self.tr("Former contributors have been removed for various reasons.")
             )
@@ -983,7 +1018,7 @@ class FeatureNotReady(QDialog):
         pix.setDevicePixelRatio(self.devicePixelRatioF())
         if not pix.isNull():
             logo.setPixmap(pix)
-        logo.set_click_handler(self.activate_null_easter_egg)
+        logo.set_click_handler(self.activate_gastertext_easter_egg)
         layout.addWidget(logo)
 
         message = QLabel(
@@ -1009,65 +1044,13 @@ class FeatureNotReady(QDialog):
         self.setMinimumSize(self.sizeHint())
 
     
-    def activate_null_easter_egg(self, event):
+    def activate_gastertext_easter_egg(self, event):
         gastertext = "❄︎☟︎☜︎ ☹︎✌︎👌︎📬︎📬︎📬︎ ✋︎❄︎ 🕈︎☟︎✋︎💧︎🏱︎☜︎☼︎💧︎📬︎📬︎📬︎ ☟︎⚐︎🕈︎ ✋︎☠︎❄︎☜︎☼︎☜︎💧︎❄︎✋︎☠︎☝︎📬︎📬︎📬︎" # THE LAB... IT WHISPERS... HOW INTERESTING...
         msg_box = QMessageBox(self)
         msg_box.setWindowIcon(QIcon(get_icon_path("bunnypad")))
         msg_box.setWindowTitle("🕈︎📬︎👎︎📬︎ ☝︎✌︎💧︎❄︎☜︎☼︎") # W.D. GASTER
         msg_box.setText(gastertext)
         msg_box.exec()
-
-class CryptoGUI(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(self.tr("RCCMITOWOATAS CryptoTool"))
-        self.setWindowIcon(QIcon(get_icon_path("bunnypad")))
-        self.setFont(QApplication.font())
-        self.setup_ui()
-    def setup_ui(self):
-        layout = QVBoxLayout(self)
-        title = QLabel(APP_NAME + "\u2122")
-        font = title.font()
-        base_font = QApplication.font()
-        font = QFont(base_font)
-        font.setPointSizeF(base_font.pointSizeF() * 1.6)
-        title.setFont(font)
-
-        title.setFont(font)
-        layout.addWidget(title)
-
-        logo = ClickableLabel()
-        pix = QPixmap(get_icon_path("bunnypad"))
-        pix.setDevicePixelRatio(self.devicePixelRatioF())
-        if not pix.isNull():
-            logo.setPixmap(pix)
-        layout.addWidget(logo)
-
-        message = QLabel(
-        text = self.tr(
-    "The Cryptography Tool has been removed as a built-in component of BunnyPad.\n"
-    "We removed it because we are migrating several larger functions\n"
-    "to a new API, which will allow for more customization than ever before.\n"
-    "We understand that this change might cause some inconvenience,\n"
-    "and we apologize for that. However, these changes will be beneficial\n"
-    "to the stability and security of BunnyPad."
-        )
-
-        )
-        message.setWordWrap(True)
-        layout.addWidget(message)
-        for i in range(layout.count()):
-            try:
-                item = layout.itemAt(i)
-                if item and item.widget():
-                    item.widget().setAlignment(Qt.AlignmentFlag.AlignHCenter)
-            except Exception:
-                pass
-        ok_button = QPushButton(self.tr("OK"))
-        ok_button.clicked.connect(self.accept)
-        layout.addWidget(ok_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        self.adjustSize()
-        self.setMinimumSize(self.sizeHint())
 
 class TheCakeIsALie(QDialog):
     
@@ -1404,27 +1387,6 @@ class Notepad(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.statusbar.showMessage("Ready")
 
-        # character map dock
-        self.character_map = CharacterWidget()
-        self.character_map.characterSelected.connect(self.insert_character)
-        self.character_map.closed.connect(lambda: self._toggle_character_map_action.setChecked(False))
-        self.character_dock = QDockWidget(QCoreApplication.translate("MainWindow", "Character Map"), self)
-        self.character_dock.setWidget(self.character_map)
-        self.character_dock.setAllowedAreas(Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea)
-        # Theme toggling for dock when floating / docked
-        def _char_dock_theme(floating):
-            if floating:
-                self.character_dock.setObjectName("FloatingWindow")
-            else:
-                self.character_dock.setObjectName("")
-            # Force QSS re‑evaluation
-            self.character_dock.style().unpolish(self.character_dock)
-            self.character_dock.style().polish(self.character_dock)
-            self.character_dock.update()
-        self.character_dock.topLevelChanged.connect(_char_dock_theme)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.character_dock)
-        self.character_dock.hide()
-
         # track changes
         self.textedit.textChanged.connect(self.handle_text_changed)
         self.show()
@@ -1612,20 +1574,12 @@ class Notepad(QMainWindow):
         tools_menu = QMenu(self.tr("Tools"), self)
         menubar.addMenu(tools_menu)
 
-        #Add starting point for RCCMITOWOATAS addition
-        rcc_action = QAction(QIcon(get_icon_path("encryption")), self.tr("Text Encryption Tool"), self)
-        rcc_action.triggered.connect(self.crypto_tool)
-        rcc_action.setStatusTip(self.tr("[Deprecated function. Will be migrated to an addon]"))
-        tools_menu.addAction(rcc_action)
-
-        # Move Charmap to Tools menu
-        toggle_character_map_action = QAction(QIcon(get_icon_path("charmap")), self.tr("Character Map"), self)
-        toggle_character_map_action.setCheckable(True)
-        toggle_character_map_action.setShortcut("Ctrl+M")
-        toggle_character_map_action.toggled.connect(self.toggle_character_map)
-        toggle_character_map_action.setStatusTip(self.tr("[Deprecated function. Will be migrated to an addon]"))
-        tools_menu.addAction(toggle_character_map_action)
-        self._toggle_character_map_action = toggle_character_map_action
+        # Move Download Options to Tools
+        download_action = QAction(QIcon(get_icon_path("share")), self.tr("Download BunnyPad Tools"), self)
+        download_action.setShortcut("Ctrl+J")
+        download_action.setStatusTip(self.tr("Download various addons for BunnyPad, or visit one of our partners/sponsors"))
+        download_action.triggered.connect(self.download)
+        tools_menu.addAction(download_action)
 
         # Help menu
         help_menu = QMenu(self.tr("Help"), self)
@@ -1660,12 +1614,6 @@ class Notepad(QMainWindow):
         contact_support_action.setStatusTip(self.tr("Contact us if you need help"))
         contact_support_action.triggered.connect(self.support)
         help_menu.addAction(contact_support_action)
-
-        download_action = QAction(QIcon(get_icon_path("share")), self.tr("Download BunnyPad Tools"), self)
-        download_action.setShortcut("Ctrl+J")
-        download_action.setStatusTip(self.tr("Download various addons for BunnyPad, or visit one of our partners/sponsors"))
-        download_action.triggered.connect(self.download)
-        help_menu.addAction(download_action)
 
         update_action = QAction(QIcon(get_icon_path("update")), self.tr("Check For Updates"), self)
         update_action.setShortcut("Alt+U")
@@ -1704,8 +1652,6 @@ class Notepad(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(font_action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(toggle_character_map_action)
-        self.toolbar.addAction(rcc_action)
         self.toolbar.addAction(cake_action)
         # File operations
     
@@ -1979,13 +1925,7 @@ class Notepad(QMainWindow):
         dlg = DownloadOptions()
         dlg.exec()
 
-    def crypto_tool(self):
-        self.open_encryption_tool()
-    
-    def toggle_character_map(self, checked):
-        self.character_dock.setVisible(checked)
 
-    
     def insert_character(self, ch: str):
         self.textedit.insertPlainText(ch)
 
