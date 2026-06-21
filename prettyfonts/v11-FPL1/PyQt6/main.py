@@ -138,7 +138,7 @@ def get_version_string() -> str:
     if is_git_dirty():
         return f"{BASE_VERSION}-dirty"
     return BASE_VERSION
-    
+
 # -----------------------------
 # App metadata
 # -----------------------------
@@ -1138,15 +1138,14 @@ class ContactUs(QDialog):
         pix.setDevicePixelRatio(self.devicePixelRatioF())
         if not pix.isNull():
             logo.setPixmap(pix)
-        logo.set_click_handler(self.activate_galaxynote7_easter_egg)
+        #logo.set_click_handler(self.activate_galaxynote7_easter_egg)
         layout.addWidget(logo)
 
         info_label = QLabel(
-            "Website: <a href='http://bunnypad.eclipse.cx' style=\"color: #0078D7;\">http://bunnypad.eclipse.cx/</a> <br> "
-            "Telegram Chat: <a href='https://t.me/bunnypaddev' style=\"color: #0078D7;\">https://t.me/bunnypaddev</a> <br> "
-            "CharaROM Website: <a href='https://chararom.xyz' style=\"color: #0078D7;\">https://chararom.xyz</a><br>"
-            "BunnyPad Donation Link: <a href='https://throne.com/bunnypad' style=\"color: #0078D7;\">https://throne.com/bunnypad</a> <br> "
-            "Text Us: +1 (814) 204-2333"
+            f"Website: <a href='http://bunnypad.eclipse.cx' style=\"color: #0078D7;\">http://bunnypad.eclipse.cx/</a> <br> "
+            f"Telegram Chat: <a href='https://t.me/bunnypaddev' style=\"color: #0078D7;\">https://t.me/bunnypaddev</a> <br> "
+            f"CharaROM Website: <a href='https://chararom.xyz' style=\"color: #0078D7;\">https://chararom.xyz</a><br>"
+            f"{APP_NAME} Donation Link: <a href='https://throne.com/bunnypad' style=\"color: #0078D7;\">https://throne.com/bunnypad</a> <br> "
         )
         info_label.setTextFormat(Qt.TextFormat.RichText)
         info_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
@@ -1159,14 +1158,6 @@ class ContactUs(QDialog):
         self.adjustSize()
         self.setMinimumSize(self.sizeHint())
 
-
-    
-    def activate_galaxynote7_easter_egg(self, event):
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Galaxy Note 7")
-        msg_box.setWindowIcon(QIcon(get_icon_path("bunnypad")))
-        msg_box.setText(self.tr("So I heard that the") + " Samsung Galaxy Note 7 " + self.tr("was the bomb, rather literally"))
-        msg_box.exec()
 
 class DownloadOptions(QDialog):
     
@@ -1398,7 +1389,7 @@ class Notepad(QMainWindow):
         self.menuBar().setNativeMenuBar(False)
         menubar.setStyleSheet("""
         QMenuBar {
-            padding: 6px;
+            padding: 4px;
         }
         QMenuBar::item {
             padding: 3px 8px;

@@ -1,8 +1,10 @@
 {English US Translation}
 about = "About"
+app_name = "BunnyPad"
 description_line1 = "A Notepad Clone named in part after Innersloth's "
 description_line2 = "Off-Topic Regular, PBbunnypower [aka Bunny]"
-copyright_line1 = "Copyright \u00a9 2023-2026 GSYT Productions, LLC Copyright \u00a9 2024-2026 The BunnyPad Contributors"
+copyright_line1 = "Copyright \u00a9 2023-2026 GSYT Productions, LLC
+Copyright \u00a9 2024-2026 The BunnyPad Contributors"
 license_text = " is licensed under the Apache 2.0 License"
 about_phrase_1 = "Hopping past opinions"
 about_phrase_2 = "pet the bunny"
@@ -52,3 +54,11 @@ cake_error_line_1 = "Unfortunately, there is no cake. You have fallen for a trap
 momentum_text = "Momentum, a function of mass and velocity, is conserved between portals. In layman's terms, speedy thing goes in, speedy thing comes out."
 momentum_title = "Momentum and Portals"
 contact_bunnypad_support = "Contact BunnyPad Support"
+website = "Website"
+telegram_chat = "Telegram Chat"
+donation_link = "Donation Link"
+ok = "OK"
+download_options_title = "Download Options"
+download_options_subtitle = "Where do you want to go today?
+
+Choose one of the available download options:"
